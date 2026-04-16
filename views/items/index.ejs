@@ -1,19 +1,27 @@
 <div class="page-header">
   <h1>Items</h1>
   <div class="page-actions">
-    <a href="/items/new" class="btn btn-primary">+ New Item</a>
+    <a href="/items/new" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      New Item
+    </a>
   </div>
 </div>
 
 <div class="filter-row">
-  <form method="get" action="/items" class="search-bar">
-    <input type="search" name="search" placeholder="Search by name, SKU, or description..."
-           value="<%= filters.search %>" aria-label="Search">
+  <form method="get" action="/items" class="search-bar" role="search" aria-label="Search items">
+    <input type="search" name="search" placeholder="Search by name, part number, or description…"
+           value="<%= filters.search %>" aria-label="Search items by name, part number, or description">
     <select name="supplier_id" aria-label="Filter by supplier">
       <option value="">All Suppliers</option>
       <% suppliers.forEach(s => { %>
       <option value="<%= s.id %>" <%= filters.supplier_id == s.id ? 'selected' : '' %>><%= s.name %></option>
       <% }) %>
+    </select>
+    <select name="status" aria-label="Filter by item status">
+      <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Active only</option>
+      <option value="inactive" <%= filters.status === 'inactive' ? 'selected' : '' %>>Deactivated</option>
+      <option value="all" <%= filters.status === 'all' ? 'selected' : '' %>>All</option>
     </select>
     <button type="submit" class="btn btn-secondary">Filter</button>
   </form>
@@ -24,9 +32,10 @@
   <form method="POST" action="/items/import" enctype="multipart/form-data">
     <div class="form-row">
       <div class="form-group">
-        <input type="file" name="file" accept=".csv" required>
+        <label for="csv-file">CSV file</label>
+        <input type="file" id="csv-file" name="file" accept=".csv,text/csv" required>
       </div>
-      <div class="form-group">
+      <div class="form-group" style="display:flex;align-items:flex-end;">
         <button type="submit" class="btn btn-secondary">Import</button>
       </div>
     </div>
@@ -36,8 +45,9 @@
 
 <% if (items.length === 0) { %>
   <div class="empty-state">
-    <p>No items found.</p>
-    <a href="/items/new" class="btn btn-primary">Create one</a>
+    <h3>No items yet</h3>
+    <p>Add the parts, materials, and components you want to track. Each item you create gets its first Kanban card automatically.</p>
+    <a href="/items/new" class="btn btn-primary">Create your first item</a>
   </div>
 <% } else { %>
   <table class="data-table">
@@ -54,11 +64,11 @@
     </thead>
     <tbody>
       <% items.forEach(item => { %>
-      <tr>
-        <td><code><%= item.part_number %></code></td>
-        <td><a href="/items/<%= item.id %>"><%= item.name %></a></td>
-        <td><%= item.supplier_name || '-' %></td>
-        <td>
+      <tr class="<%= item.is_active ? '' : 'row-inactive' %>">
+        <td data-label="Part #"><code><%= item.part_number %></code><% if (!item.is_active) { %> <span class="badge badge-cancelled">Inactive</span><% } %></td>
+        <td data-label="Name"><a href="/items/<%= item.id %>"><%= item.name %></a></td>
+        <td data-label="Supplier"><%= item.supplier_name || '-' %></td>
+        <td data-label="Stock">
           <% if (item.current_stock <= 0) { %>
             <span class="stock-out"><%= item.current_stock %></span>
           <% } else if (item.current_stock <= item.reorder_point) { %>
@@ -67,13 +77,23 @@
             <span class="stock-ok"><%= item.current_stock %></span>
           <% } %>
         </td>
-        <td><%= item.reorder_point %></td>
-        <td><a href="/cards?item_id=<%= item.id %>">View</a></td>
-        <td>
-          <a href="/items/<%= item.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
-          <form method="POST" action="/items/<%= item.id %>?_method=DELETE" class="inline-form">
-            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Deactivate this item?">Deactivate</button>
-          </form>
+        <td data-label="Reorder Pt"><%= item.reorder_point %></td>
+        <td data-label="Cards"><a href="/cards?item_id=<%= item.id %>">View</a></td>
+        <td class="col-actions">
+          <% if (item.is_active) { %>
+            <form method="POST" action="/items/<%= item.id %>/queue" class="inline-form">
+              <button type="submit" class="btn btn-ghost btn-sm">Order</button>
+            </form>
+            <a href="/items/<%= item.id %>/clone" class="btn btn-ghost btn-sm">Clone</a>
+            <a href="/items/<%= item.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
+            <form method="POST" action="/items/<%= item.id %>?_method=DELETE" class="inline-form">
+              <button type="submit" class="btn btn-danger btn-sm" data-confirm="Deactivate this item?">Deactivate</button>
+            </form>
+          <% } else { %>
+            <form method="POST" action="/items/<%= item.id %>/reactivate" class="inline-form">
+              <button type="submit" class="btn btn-success btn-sm" data-confirm="Reactivate this item? A new Kanban card will be created.">Reactivate</button>
+            </form>
+          <% } %>
         </td>
       </tr>
       <% }) %>

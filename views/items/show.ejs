@@ -6,6 +6,13 @@
 <div class="page-header">
   <h1><%= item.name %></h1>
   <div class="page-actions">
+    <form method="POST" action="/items/<%= item.id %>/queue" class="inline-form">
+      <button type="submit" class="btn btn-primary">Add to Order Queue</button>
+    </form>
+    <% if (item.supplier_url) { %>
+    <a href="<%= item.supplier_url %>" class="btn btn-secondary" target="_blank" rel="noopener">Reorder &rarr;</a>
+    <% } %>
+    <a href="/items/<%= item.id %>/clone" class="btn btn-ghost">Clone</a>
     <a href="/items/<%= item.id %>/edit" class="btn btn-secondary">Edit</a>
     <form method="POST" action="/items/<%= item.id %>?_method=DELETE" class="inline-form">
       <button type="submit" class="btn btn-danger" data-confirm="Deactivate this item?">Deactivate</button>
@@ -27,8 +34,15 @@
       <dd><%= item.location_name || 'Not assigned' %></dd>
       <dt>Unit of Measure</dt>
       <dd><%= item.unit_of_measure || 'N/A' %></dd>
-      <dt>Cost</dt>
-      <dd>$<%= parseFloat(item.cost_per_unit || 0).toFixed(2) %></dd>
+      <dt>Cost per Unit</dt>
+      <dd>$<%= parseFloat(item.cost_per_unit || 0).toFixed(6) %></dd>
+      <% const packSize = item.pack_size || 1; %>
+      <% if (packSize > 1) { %>
+      <dt>Pack Size</dt>
+      <dd><%= packSize %> units/pack &middot; $<%= (parseFloat(item.cost_per_unit || 0) * packSize).toFixed(2) %> per pack</dd>
+      <% } %>
+      <dt>Order By</dt>
+      <dd><%= item.order_unit === 'pack' ? 'Pack' : 'Individual Unit' %></dd>
       <dt>Reorder Point</dt>
       <dd><%= item.reorder_point %></dd>
       <dt>Reorder Quantity</dt>
@@ -49,6 +63,10 @@
           <span class="stock-ok"><%= item.current_stock %></span>
         <% } %>
       </dd>
+      <% if (item.supplier_url) { %>
+      <dt>Reorder URL</dt>
+      <dd><a href="<%= item.supplier_url %>" target="_blank" rel="noopener"><%= item.supplier_url %></a></dd>
+      <% } %>
     </dl>
   </div>
 
@@ -74,7 +92,7 @@
 
   <% if (cards.length === 0) { %>
     <div class="empty-state">
-      <p>No cards generated for this item yet.</p>
+      <p class="text-muted">No cards for this item yet. Use the form above to generate one.</p>
     </div>
   <% } else { %>
     <table class="data-table">
@@ -84,17 +102,17 @@
           <th>Loop #</th>
           <th>Status</th>
           <th>Location</th>
-          <th>Last Scanned</th>
+          <th>Last scanned</th>
         </tr>
       </thead>
       <tbody>
         <% cards.forEach(card => { %>
         <tr>
-          <td><a href="/cards/<%= card.id %>"><code><%= card.card_uid %></code></a></td>
-          <td><%= card.loop_count || 0 %></td>
-          <td><span class="badge badge-<%= card.status %>"><%= card.status %></span></td>
-          <td><%= card.location_name || '-' %></td>
-          <td><%= card.last_scanned ? new Date(card.last_scanned).toLocaleDateString() : '-' %></td>
+          <td data-label="Card UID"><a href="/cards/<%= card.id %>"><code><%= (card.card_uid || '').substring(0, 8) %>…</code></a></td>
+          <td data-label="Loop"><%= card.loop_number || 1 %></td>
+          <td data-label="Status"><span class="badge badge-<%= card.status %>"><%= (card.status || '').replace(/_/g, ' ') %></span></td>
+          <td data-label="Location"><%= card.location_name || '—' %></td>
+          <td data-label="Last scanned"><%= card.last_scanned_at ? new Date(card.last_scanned_at).toLocaleDateString() : '—' %></td>
         </tr>
         <% }) %>
       </tbody>
@@ -109,7 +127,7 @@
 
   <% if (scanHistory.length === 0) { %>
     <div class="empty-state">
-      <p>No scans recorded yet.</p>
+      <p class="text-muted">No scans yet. Scan activity will appear here once cards start moving.</p>
     </div>
   <% } else { %>
     <table class="data-table">
@@ -117,17 +135,29 @@
         <tr>
           <th>When</th>
           <th>Card</th>
-          <th>Scanned By</th>
-          <th>Status at Scan</th>
+          <th>Scanned by</th>
+          <th>Action</th>
+          <th>Status change</th>
         </tr>
       </thead>
       <tbody>
         <% scanHistory.forEach(scan => { %>
         <tr>
-          <td><%= new Date(scan.scanned_at).toLocaleString() %></td>
-          <td><code><%= scan.card_uid || '-' %></code></td>
-          <td><%= scan.scanned_by_name || 'Unknown' %></td>
-          <td><span class="badge badge-<%= scan.status_at_scan %>"><%= scan.status_at_scan %></span></td>
+          <td data-label="When"><%= new Date(scan.scanned_at).toLocaleString() %></td>
+          <td data-label="Card"><code><%= (scan.card_uid || '').substring(0, 8) %>…</code></td>
+          <td data-label="Scanned by"><%= scan.scanned_by_name || 'Unknown' %></td>
+          <td data-label="Action"><%= scan.action %></td>
+          <td data-label="Status change">
+            <% if (scan.previous_status && scan.new_status && scan.previous_status !== scan.new_status) { %>
+              <span class="badge badge-<%= scan.previous_status %>"><%= scan.previous_status.replace(/_/g, ' ') %></span>
+              <span aria-hidden="true" style="color:var(--text-tertiary);margin:0 var(--space-xs);">→</span>
+              <span class="badge badge-<%= scan.new_status %>"><%= scan.new_status.replace(/_/g, ' ') %></span>
+            <% } else if (scan.new_status) { %>
+              <span class="badge badge-<%= scan.new_status %>"><%= scan.new_status.replace(/_/g, ' ') %></span>
+            <% } else { %>
+              —
+            <% } %>
+          </td>
         </tr>
         <% }) %>
       </tbody>

@@ -78,50 +78,96 @@ router.post('/', async (req, res) => {
       return res.redirect('/orders/queue');
     }
 
-    const totalCost = lineItems.reduce(
-      (sum, li) => sum + (parseFloat(li.quantity) * parseFloat(li.cost_per_unit || 0)),
+    // Coerce incoming values — form data arrives as strings
+    const supplierIdInt = parseInt(supplier_id, 10);
+    if (!supplierIdInt) {
+      res.flash('error', 'Invalid supplier');
+      return res.redirect('/orders/queue');
+    }
+
+    const normalizedLines = lineItems.map((li) => ({
+      item_id: parseInt(li.item_id, 10),
+      quantity: parseInt(li.quantity, 10) || 1,
+      cost_per_unit: parseFloat(li.cost_per_unit) || 0,
+    })).filter((li) => li.item_id);
+
+    if (normalizedLines.length === 0) {
+      res.flash('error', 'No valid line items selected');
+      return res.redirect('/orders/queue');
+    }
+
+    const totalCost = normalizedLines.reduce(
+      (sum, li) => sum + (li.quantity * li.cost_per_unit),
       0
     );
 
-    // Generate order number
+    // Generate a unique order number — if a collision happens, bump the sequence
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const countResult = await query(
       "SELECT COUNT(*) FROM orders WHERE created_at >= CURRENT_DATE"
     );
-    const seq = String(parseInt(countResult.rows[0].count) + 1).padStart(4, '0');
-    const orderNumber = `PO-${dateStr}-${seq}`;
+    let seq = parseInt(countResult.rows[0].count, 10) + 1;
+    let orderNumber = `PO-${dateStr}-${String(seq).padStart(4, '0')}`;
 
-    const orderResult = await query(
-      `INSERT INTO orders (order_number, supplier_id, status, total_cost, created_by)
-       VALUES ($1, $2, 'pending', $3, $4)
-       RETURNING *`,
-      [orderNumber, supplier_id, totalCost, req.authUser.id]
-    );
+    let orderResult;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        orderResult = await query(
+          `INSERT INTO orders (order_number, supplier_id, status, total_cost, created_by)
+           VALUES ($1, $2, 'pending', $3, $4)
+           RETURNING *`,
+          [orderNumber, supplierIdInt, totalCost, req.authUser.id]
+        );
+        break;
+      } catch (err) {
+        if (err.code === '23505' && err.constraint === 'orders_order_number_key') {
+          seq += 1;
+          orderNumber = `PO-${dateStr}-${String(seq).padStart(4, '0')}`;
+          continue;
+        }
+        throw err;
+      }
+    }
+    if (!orderResult) {
+      res.flash('error', 'Could not assign a unique order number — try again');
+      return res.redirect('/orders/queue');
+    }
     const order = orderResult.rows[0];
 
-    for (const li of lineItems) {
-      await query(
-        `INSERT INTO order_items (order_id, item_id, quantity, unit_cost)
-         VALUES ($1, $2, $3, $4)`,
-        [order.id, li.item_id, li.quantity, li.cost_per_unit || 0]
+    for (const li of normalizedLines) {
+      // Find an in_queue card for this item to link to the order line (if any)
+      const queuedCard = await query(
+        `SELECT id FROM cards WHERE item_id = $1 AND status = 'in_queue' ORDER BY loop_number LIMIT 1`,
+        [li.item_id]
       );
-      // Transition cards from in_queue to ordered
-      if (li.card_ids) {
-        const cardIds = typeof li.card_ids === 'string' ? JSON.parse(li.card_ids) : li.card_ids;
-        for (const cardId of cardIds) {
-          await query(
-            `UPDATE cards SET status = 'ordered', updated_at = NOW() WHERE id = $1 AND status = 'in_queue'`,
-            [cardId]
-          );
-        }
-      }
+      const linkedCardId = queuedCard.rows[0]?.id || null;
+
+      await query(
+        `INSERT INTO order_items (order_id, item_id, card_id, quantity, unit_cost)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [order.id, li.item_id, linkedCardId, li.quantity, li.cost_per_unit]
+      );
+
+      // Transition all in_queue cards for this item to ordered
+      await query(
+        `UPDATE cards SET status = 'ordered', updated_at = NOW()
+         WHERE item_id = $1 AND status = 'in_queue'`,
+        [li.item_id]
+      );
     }
 
     res.flash('success', `Order ${orderNumber} created`);
     res.redirect(`/orders/${order.id}`);
   } catch (err) {
     console.error('Order create error:', err);
-    res.flash('error', 'Failed to create order');
+    // Surface a user-friendly hint based on common Postgres error codes
+    let hint = 'Failed to create order';
+    if (err.code === '23502') hint = 'Missing required field: ' + (err.column || 'unknown');
+    else if (err.code === '23503') hint = 'Referenced record not found (supplier or item may have been deleted)';
+    else if (err.code === '23505') hint = 'Duplicate order number — retry';
+    else if (err.code === '22P02') hint = 'Invalid number format in submitted data';
+    else if (err.message) hint = `Failed to create order: ${err.message.slice(0, 140)}`;
+    res.flash('error', hint);
     res.redirect('/orders/queue');
   }
 });
@@ -192,7 +238,61 @@ router.put('/:id', async (req, res) => {
       params
     );
 
-    res.flash('success', 'Order updated');
+    // If marked as received via the status dropdown, auto-process all line items:
+    //   - fill remaining received_quantity
+    //   - add stock
+    //   - reset cards to at_location
+    //   - log to receiving_log at the item's default location
+    if (status === 'received') {
+      const linesResult = await query(
+        `SELECT oi.id, oi.item_id, oi.quantity, COALESCE(oi.received_quantity, 0) AS received_so_far,
+                i.current_stock, i.location_id AS item_location_id,
+                i.order_unit, i.pack_size
+         FROM order_items oi
+         JOIN items i ON oi.item_id = i.id
+         WHERE oi.order_id = $1`,
+        [req.params.id]
+      );
+
+      for (const line of linesResult.rows) {
+        const remaining = line.quantity - line.received_so_far;
+        if (remaining <= 0) continue;
+
+        await query(
+          `UPDATE order_items SET received_quantity = COALESCE(received_quantity, 0) + $2
+           WHERE id = $1`,
+          [line.id, remaining]
+        );
+
+        // If ordered by pack, each unit adds pack_size to stock
+        const multiplier = line.order_unit === 'pack' ? (line.pack_size || 1) : 1;
+        const stockIncrement = remaining * multiplier;
+
+        await query(
+          `UPDATE items SET current_stock = current_stock + $2, updated_at = NOW()
+           WHERE id = $1`,
+          [line.item_id, stockIncrement]
+        );
+
+        if (line.item_location_id) {
+          await query(
+            `INSERT INTO receiving_log (order_id, order_item_id, quantity_received, location_id, received_by)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [req.params.id, line.id, remaining, line.item_location_id, req.authUser.id]
+          );
+        }
+      }
+
+      // Reset cards tied to this order back to at_location
+      await query(
+        `UPDATE cards SET status = 'at_location', updated_at = NOW()
+         WHERE item_id IN (SELECT item_id FROM order_items WHERE order_id = $1)
+           AND status IN ('ordered', 'in_transit', 'received')`,
+        [req.params.id]
+      );
+    }
+
+    res.flash('success', status === 'received' ? 'Order received and stock updated' : 'Order updated');
     res.redirect(`/orders/${req.params.id}`);
   } catch (err) {
     console.error('Order update error:', err);

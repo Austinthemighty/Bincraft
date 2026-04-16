@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Print Cards - ItemCards</title>
+  <title>Print Cards - Bincraft</title>
   <style>
     /* ====== Avery Label Format Definitions ====== */
     :root {
@@ -216,7 +216,7 @@ const CARDS = <%- JSON.stringify(cards.map(c => ({
   loop_number: c.loop_number || 1,
   card_uid: c.card_uid,
   item_id: c.item_id,
-  label_color: c.label_color || '#000000',
+  label_color: c.label_color || '#000000', // fallback already black
 }))) %>;
 
 const FORMATS = {

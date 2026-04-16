@@ -33,7 +33,7 @@ async function start() {
 
     // Start both servers
     httpsServer.listen(HTTPS_PORT, () => {
-      console.log(`ItemCards (HTTPS) running at https://localhost${HTTPS_PORT === 443 ? '' : ':' + HTTPS_PORT}`);
+      console.log(`Bincraft (HTTPS) running at https://localhost${HTTPS_PORT === 443 ? '' : ':' + HTTPS_PORT}`);
     }).on('error', (err) => {
       if (err.code === 'EACCES') {
         console.error(`[SSL] Port ${HTTPS_PORT} requires elevated privileges.`);
@@ -45,7 +45,7 @@ async function start() {
     });
 
     httpServer.listen(HTTP_PORT, () => {
-      console.log(`ItemCards (HTTP→HTTPS redirect) on port ${HTTP_PORT}`);
+      console.log(`Bincraft (HTTP→HTTPS redirect) on port ${HTTP_PORT}`);
     }).on('error', (err) => {
       if (err.code === 'EACCES') {
         console.warn(`[SSL] Port ${HTTP_PORT} requires elevated privileges — HTTP redirect disabled.`);
@@ -65,7 +65,7 @@ async function start() {
     const httpServer = createHttpServer(app);
 
     httpServer.listen(HTTP_PORT, () => {
-      console.log(`ItemCards (HTTP) running at http://localhost${HTTP_PORT === 80 ? '' : ':' + HTTP_PORT}`);
+      console.log(`Bincraft (HTTP) running at http://localhost${HTTP_PORT === 80 ? '' : ':' + HTTP_PORT}`);
     }).on('error', (err) => {
       if (err.code === 'EACCES') {
         console.error(`Port ${HTTP_PORT} requires elevated privileges.`);
@@ -83,5 +83,15 @@ start().catch((err) => {
   process.exit(1);
 });
 
-process.on('SIGTERM', () => pool.end());
-process.on('SIGINT', () => pool.end());
+async function shutdown(signal) {
+  console.log(`\n[${signal}] Shutting down...`);
+  try {
+    await pool.end();
+  } catch (err) {
+    console.error('Error closing DB pool:', err.message);
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

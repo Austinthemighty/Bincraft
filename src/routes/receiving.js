@@ -46,9 +46,13 @@ router.get('/:order_id', async (req, res) => {
 
     const linesResult = await query(
       `SELECT oi.*, i.name AS item_name, i.part_number, i.current_stock,
+              i.location_id AS item_location_id,
+              i.order_unit, i.pack_size,
+              l.name AS item_location_name,
               COALESCE(oi.received_quantity, 0) AS received_so_far
        FROM order_items oi
        JOIN items i ON oi.item_id = i.id
+       LEFT JOIN locations l ON i.location_id = l.id
        WHERE oi.order_id = $1
        ORDER BY oi.id`,
       [req.params.order_id]
@@ -73,37 +77,90 @@ router.get('/:order_id', async (req, res) => {
 router.post('/:order_id', async (req, res) => {
   try {
     const { lines } = req.body;
-    const lineEntries = Object.entries(lines || {});
 
-    for (const [lineId, data] of lineEntries) {
-      const receivedQty = parseInt(data.received_quantity, 10) || 0;
-      if (receivedQty <= 0) continue;
+    // Diagnostic: if the nested body parser failed, `lines` will be undefined
+    if (!lines || typeof lines !== 'object') {
+      console.error('[Receiving] req.body.lines missing — body:', JSON.stringify(req.body).slice(0, 500));
+      res.flash('error', 'Form data did not reach the server. Try reloading the page.');
+      return res.redirect(`/receiving/${req.params.order_id}`);
+    }
 
-      // Update order item received quantity
-      await query(
-        `UPDATE order_items SET received_quantity = COALESCE(received_quantity, 0) + $2
-         WHERE id = $1`,
-        [lineId, receivedQty]
-      );
+    const allEntries = Object.entries(lines);
+    const lineEntries = allEntries.filter(([_, d]) => parseInt(d?.received_quantity, 10) > 0);
 
-      // Get the item_id for this line
-      const lineResult = await query('SELECT item_id FROM order_items WHERE id = $1', [lineId]);
-      if (lineResult.rows[0]) {
-        const itemId = lineResult.rows[0].item_id;
-        const item = await Item.findById(itemId);
-        if (item) {
-          await Item.updateStock(itemId, item.current_stock + receivedQty);
-        }
+    if (lineEntries.length === 0) {
+      const msg = allEntries.length > 0
+        ? `No quantities to receive — all ${allEntries.length} line(s) had zero. Enter a positive quantity and try again.`
+        : 'No line items submitted.';
+      res.flash('warning', msg);
+      return res.redirect(`/receiving/${req.params.order_id}`);
+    }
+
+    // Form keys use "line_<id>" prefix to prevent the body parser from treating
+    // numeric keys as array indices. Strip the prefix to get the real line ID.
+    const normalizedEntries = lineEntries.map(([key, data]) => {
+      const m = String(key).match(/^line_(\d+)$/);
+      const id = m ? parseInt(m[1], 10) : parseInt(key, 10);
+      return [id, data];
+    }).filter(([id]) => Number.isFinite(id) && id > 0);
+
+    const lineIds = normalizedEntries.map(([id]) => id);
+    if (lineIds.length === 0) {
+      res.flash('error', 'Could not parse line IDs from form');
+      return res.redirect(`/receiving/${req.params.order_id}`);
+    }
+
+    const itemsResult = await query(
+      `SELECT oi.id AS line_id, oi.item_id, i.order_unit, i.pack_size
+       FROM order_items oi
+       JOIN items i ON oi.item_id = i.id
+       WHERE oi.id = ANY($1) AND oi.order_id = $2`,
+      [lineIds, parseInt(req.params.order_id, 10)]
+    );
+
+    const lineMeta = {};
+    for (const row of itemsResult.rows) {
+      lineMeta[row.line_id] = row;
+    }
+
+    let processedCount = 0;
+    const skippedIds = [];
+
+    for (const [lineId, data] of normalizedEntries) {
+      const receivedQty = parseInt(data.received_quantity, 10);
+      const meta = lineMeta[lineId];
+      if (!meta) {
+        skippedIds.push(lineId);
+        continue;
       }
 
-      // Log the receipt
-      if (data.location_id) {
-        await query(
-          `INSERT INTO receiving_log (order_id, order_item_id, quantity_received, location_id, received_by)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [req.params.order_id, lineId, receivedQty, data.location_id, req.authUser.id]
-        );
-      }
+      const multiplier = meta.order_unit === 'pack' ? (meta.pack_size || 1) : 1;
+      const stockIncrement = receivedQty * multiplier;
+
+      await Promise.all([
+        query(
+          `UPDATE order_items SET received_quantity = COALESCE(received_quantity, 0) + $2 WHERE id = $1`,
+          [parseInt(lineId, 10), receivedQty]
+        ),
+        query(
+          `UPDATE items SET current_stock = current_stock + $2, updated_at = NOW() WHERE id = $1`,
+          [meta.item_id, stockIncrement]
+        ),
+        data.location_id
+          ? query(
+              `INSERT INTO receiving_log (order_id, order_item_id, quantity_received, location_id, received_by)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [parseInt(req.params.order_id, 10), parseInt(lineId, 10), receivedQty, parseInt(data.location_id, 10), req.authUser.id]
+            )
+          : Promise.resolve(),
+      ]);
+      processedCount++;
+    }
+
+    if (processedCount === 0) {
+      console.error('[Receiving] No lines processed. Submitted:', lineEntries.map(([id]) => id), 'Matched in DB:', Object.keys(lineMeta), 'Skipped:', skippedIds);
+      res.flash('error', `Could not match submitted line IDs to this order. Submitted: [${skippedIds.join(', ')}]. Check that the lines belong to order #${req.params.order_id}.`);
+      return res.redirect(`/receiving/${req.params.order_id}`);
     }
 
     // Check if all lines are fully received
@@ -136,7 +193,9 @@ router.post('/:order_id', async (req, res) => {
       }
     }
 
-    res.flash('success', allReceived ? 'Order fully received' : 'Receipt recorded');
+    const msgParts = [`Received ${processedCount} line${processedCount === 1 ? '' : 's'}`];
+    if (allReceived) msgParts.push('Order fully received — stock updated and cards reset');
+    res.flash('success', msgParts.join(' · '));
     res.redirect('/receiving');
   } catch (err) {
     console.error('Receiving process error:', err);

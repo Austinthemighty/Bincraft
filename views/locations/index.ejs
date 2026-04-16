@@ -1,13 +1,18 @@
 <div class="page-header">
   <h1>Locations</h1>
   <div class="page-actions">
-    <a href="/locations/new" class="btn btn-primary">New Location</a>
+    <a href="/locations/new" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      New Location
+    </a>
   </div>
 </div>
 
 <% if (!locations || locations.length === 0) { %>
   <div class="empty-state">
-    <p>No locations defined yet. <a href="/locations/new">Create one</a>.</p>
+    <h3>No locations yet</h3>
+    <p>Organize your storage in a facility → area → location hierarchy. You'll need at least one location before you can assign items to shelves or racks.</p>
+    <a href="/locations/new" class="btn btn-primary">Add a location</a>
   </div>
 <% } else { %>
   <%

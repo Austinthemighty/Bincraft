@@ -1,29 +1,40 @@
+<%
+  // Two separate concerns:
+  //   hasItem — there's data to pre-fill (edit OR clone)
+  //   isEdit — form should PUT to an existing item (edit only)
+  const hasItem = typeof item !== 'undefined' && item;
+  const isEdit = hasItem && item.id;
+  const headingLabel = isEdit ? `Edit ${item.name}` : (hasItem ? 'Clone Item' : 'New Item');
+  const breadcrumbLabel = isEdit ? 'Edit' : (hasItem ? 'Clone' : 'New');
+  const submitLabel = isEdit ? 'Update' : 'Create';
+%>
+
 <ul class="breadcrumbs">
   <li><a href="/items">Items</a></li>
-  <li><%= typeof item !== 'undefined' && item ? 'Edit' : 'New' %> Item</li>
+  <li><%= breadcrumbLabel %> Item</li>
 </ul>
 
-<h1><%= typeof item !== 'undefined' && item ? `Edit ${item.name}` : 'New Item' %></h1>
+<h1><%= headingLabel %></h1>
 
 <form method="POST"
-      action="<%= typeof item !== 'undefined' && item ? `/items/${item.id}?_method=PUT` : '/items' %>">
+      action="<%= isEdit ? `/items/${item.id}?_method=PUT` : '/items' %>">
 
   <div class="form-row">
     <div class="form-group">
       <label for="part_number">Part Number *</label>
       <input type="text" id="part_number" name="part_number" required
-             value="<%= typeof item !== 'undefined' && item ? item.part_number : '' %>">
+             value="<%= hasItem ? item.part_number : '' %>">
     </div>
     <div class="form-group">
       <label for="name">Name *</label>
       <input type="text" id="name" name="name" required
-             value="<%= typeof item !== 'undefined' && item ? item.name : '' %>">
+             value="<%= hasItem ? item.name : '' %>">
     </div>
   </div>
 
   <div class="form-group">
     <label for="description">Description</label>
-    <textarea id="description" name="description" rows="2"><%= typeof item !== 'undefined' && item ? (item.description || '') : '' %></textarea>
+    <textarea id="description" name="description" rows="2"><%= hasItem ? (item.description || '') : '' %></textarea>
   </div>
 
   <div class="form-row">
@@ -32,7 +43,7 @@
       <select id="supplier_id" name="supplier_id">
         <option value="">No supplier</option>
         <% suppliers.forEach(s => { %>
-        <option value="<%= s.id %>" <%= typeof item !== 'undefined' && item && item.supplier_id == s.id ? 'selected' : '' %>><%= s.name %></option>
+        <option value="<%= s.id %>" <%= hasItem && item.supplier_id == s.id ? 'selected' : '' %>><%= s.name %></option>
         <% }) %>
       </select>
     </div>
@@ -41,7 +52,7 @@
       <select id="location_id" name="location_id">
         <option value="">No location</option>
         <% locations.forEach(l => { %>
-        <option value="<%= l.id %>" <%= typeof item !== 'undefined' && item && item.location_id == l.id ? 'selected' : '' %>><%= l.name %> (<%= l.type %>)</option>
+        <option value="<%= l.id %>" <%= hasItem && item.location_id == l.id ? 'selected' : '' %>><%= l.name %> (<%= l.type %>)</option>
         <% }) %>
       </select>
     </div>
@@ -50,27 +61,61 @@
   <div class="form-row">
     <div class="form-group">
       <label for="cost_per_unit">Cost Per Unit ($)</label>
-      <input type="number" id="cost_per_unit" name="cost_per_unit" step="0.01" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.cost_per_unit || 0) : '0' %>">
+      <input type="number" id="cost_per_unit" name="cost_per_unit" step="0.000001" min="0"
+             value="<%= hasItem ? (item.cost_per_unit || 0) : '0' %>"
+             oninput="updatePackPrice()">
     </div>
     <div class="form-group">
       <label for="unit_of_measure">Unit of Measure</label>
       <input type="text" id="unit_of_measure" name="unit_of_measure"
-             value="<%= typeof item !== 'undefined' && item ? (item.unit_of_measure || '') : '' %>"
+             value="<%= hasItem ? (item.unit_of_measure || '') : '' %>"
              placeholder="e.g. each, box, kg">
     </div>
   </div>
 
   <div class="form-row">
     <div class="form-group">
+      <label for="pack_size">Pack Size (units per pack)</label>
+      <input type="number" id="pack_size" name="pack_size" min="1" step="1"
+             value="<%= hasItem ? (item.pack_size || 1) : '1' %>"
+             oninput="updatePackPrice()">
+      <span id="pack-price-display" class="field-hint"></span>
+    </div>
+    <div class="form-group">
+      <label for="order_unit">Order By</label>
+      <select id="order_unit" name="order_unit">
+        <option value="unit" <%= hasItem && item.order_unit === 'unit' ? 'selected' : '' %>>Individual Unit</option>
+        <option value="pack" <%= hasItem && item.order_unit === 'pack' ? 'selected' : '' %>>Pack</option>
+      </select>
+      <span class="field-hint">Reorder quantity is counted in this unit.</span>
+    </div>
+  </div>
+
+  <script>
+    function updatePackPrice() {
+      const unit = parseFloat(document.getElementById('cost_per_unit').value) || 0;
+      const size = parseInt(document.getElementById('pack_size').value) || 1;
+      const display = document.getElementById('pack-price-display');
+      if (size > 1 && unit > 0) {
+        const packPrice = (unit * size).toFixed(2);
+        display.textContent = `Pack price: $${packPrice} ($${unit.toFixed(6)} × ${size})`;
+      } else {
+        display.textContent = '';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', updatePackPrice);
+  </script>
+
+  <div class="form-row">
+    <div class="form-group">
       <label for="reorder_point">Reorder Point</label>
       <input type="number" id="reorder_point" name="reorder_point" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.reorder_point || 0) : '0' %>">
+             value="<%= hasItem ? (item.reorder_point || 0) : '0' %>">
     </div>
     <div class="form-group">
       <label for="reorder_quantity">Reorder Quantity</label>
       <input type="number" id="reorder_quantity" name="reorder_quantity" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.reorder_quantity || 0) : '0' %>">
+             value="<%= hasItem ? (item.reorder_quantity || 0) : '0' %>">
     </div>
   </div>
 
@@ -78,12 +123,12 @@
     <div class="form-group">
       <label for="container_quantity">Container Quantity</label>
       <input type="number" id="container_quantity" name="container_quantity" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.container_quantity || 0) : '0' %>">
+             value="<%= hasItem ? (item.container_quantity || 0) : '0' %>">
     </div>
     <div class="form-group">
       <label for="lead_time_days">Lead Time (days)</label>
       <input type="number" id="lead_time_days" name="lead_time_days" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.lead_time_days || 0) : '0' %>">
+             value="<%= hasItem ? (item.lead_time_days || 0) : '0' %>">
     </div>
   </div>
 
@@ -91,12 +136,12 @@
     <div class="form-group">
       <label for="safety_factor">Safety Factor</label>
       <input type="number" id="safety_factor" name="safety_factor" step="0.1" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.safety_factor || 1) : '1' %>">
+             value="<%= hasItem ? (item.safety_factor || 1) : '1' %>">
     </div>
     <div class="form-group">
       <label for="current_stock">Current Stock</label>
       <input type="number" id="current_stock" name="current_stock" min="0"
-             value="<%= typeof item !== 'undefined' && item ? (item.current_stock || 0) : '0' %>">
+             value="<%= hasItem ? (item.current_stock || 0) : '0' %>">
     </div>
   </div>
 
@@ -105,15 +150,21 @@
       <label for="label_color">Label Color</label>
       <div style="display:flex;gap:var(--space-sm);align-items:center;">
         <input type="color" id="label_color" name="label_color"
-               value="<%= typeof item !== 'undefined' && item ? (item.label_color || '#ffffff') : '#ffffff' %>"
+               value="<%= hasItem ? (item.label_color || '#000000') : '#000000' %>"
                style="width:48px;height:36px;padding:2px;cursor:pointer;border-radius:var(--radius-sm);">
-        <span style="font-size:var(--text-xs);color:var(--text-tertiary);">Used for item name on printed labels</span>
+        <span class="field-hint-inline">Used for item name on printed labels</span>
       </div>
+    </div>
+    <div class="form-group">
+      <label for="supplier_url">Reorder URL</label>
+      <input type="url" id="supplier_url" name="supplier_url"
+             value="<%= hasItem ? (item.supplier_url || '') : '' %>"
+             placeholder="https://supplier.com/product/abc">
     </div>
   </div>
 
   <div class="form-actions">
     <a href="/items" class="btn btn-ghost">Cancel</a>
-    <button type="submit" class="btn btn-primary"><%= typeof item !== 'undefined' && item ? 'Update' : 'Create' %> Item</button>
+    <button type="submit" class="btn btn-primary"><%= submitLabel %> Item</button>
   </div>
 </form>

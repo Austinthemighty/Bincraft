@@ -10,45 +10,61 @@
 <% const suppliers = Object.values(grouped); %>
 <% if (suppliers.length === 0) { %>
   <div class="empty-state">
-    <p>No items need reordering right now. All cards are at their locations.</p>
+    <h3>Queue is clear</h3>
+    <p>All cards are at their locations. When stock runs low, scan a card or hit <strong>Order</strong> on a low-stock item from the dashboard to add it here.</p>
+    <a href="/dashboard" class="btn btn-secondary">Back to dashboard</a>
   </div>
 <% } else { %>
   <% suppliers.forEach(group => { %>
   <div class="supplier-group">
     <h3><%= group.supplier_name || 'No Supplier Assigned' %>
       <% if (group.supplier_id) { %>
-        <span style="opacity:0.5; font-weight:normal; font-size:var(--text-sm, 0.875rem);">(<%= Object.keys(group.items).length %> items)</span>
+        <span class="supplier-group-count">(<%= Object.keys(group.items).length %> items)</span>
       <% } %>
     </h3>
 
     <form method="POST" action="/orders" id="order-form-<%= group.supplier_id || 'none' %>">
       <input type="hidden" name="supplier_id" value="<%= group.supplier_id || '' %>">
 
-      <table class="data-table">
+      <table class="data-table keep-layout">
         <thead>
           <tr>
-            <th style="width:2rem"><input type="checkbox" onchange="toggleAll(this, '<%= group.supplier_id || 'none' %>')"></th>
+            <th style="width:2rem"><input type="checkbox" aria-label="Select all items from <%= group.supplier_name || 'this supplier' %>" onchange="toggleAll(this, '<%= group.supplier_id || 'none' %>')"></th>
             <th>Part #</th>
             <th>Name</th>
-            <th class="col-number">Reorder Qty</th>
-            <th class="col-number">Cost</th>
-            <th class="col-number">Card Count</th>
+            <th class="col-number">Order Qty</th>
+            <th>Unit</th>
+            <th class="col-number">Price</th>
+            <th class="col-number">Line Total</th>
           </tr>
         </thead>
         <tbody>
           <% Object.values(group.items).forEach(item => { %>
+          <%
+            const packSize = parseInt(item.pack_size) || 1;
+            const unitCost = parseFloat(item.cost_per_unit) || 0;
+            const orderByPack = item.order_unit === 'pack';
+            // Cost per ordering unit (pack or individual)
+            const priceEach = orderByPack ? unitCost * packSize : unitCost;
+            const orderQty = parseInt(item.reorder_quantity) || item.card_count || 1;
+            const lineTotal = priceEach * orderQty;
+          %>
           <tr>
             <td>
               <input type="checkbox" class="item-check-<%= group.supplier_id || 'none' %>"
+                     aria-label="Include <%= item.name %> in order"
                      data-item-id="<%= item.id %>"
-                     data-quantity="<%= item.reorder_quantity || item.card_count %>"
-                     data-unit-cost="<%= item.cost_per_unit || 0 %>">
+                     data-quantity="<%= orderQty %>"
+                     data-unit-cost="<%= priceEach %>">
             </td>
             <td><code><%= item.part_number %></code></td>
             <td><a href="/items/<%= item.id %>"><%= item.name %></a></td>
-            <td class="col-number"><%= item.reorder_quantity || '-' %></td>
-            <td class="col-number">$<%= parseFloat(item.cost_per_unit || 0).toFixed(2) %></td>
-            <td class="col-number"><%= item.card_count %></td>
+            <td class="col-number"><%= orderQty %></td>
+            <td>
+              <%= orderByPack ? `pack of ${packSize}` : 'each' %>
+            </td>
+            <td class="col-number">$<%= priceEach.toFixed(orderByPack ? 2 : 6) %></td>
+            <td class="col-number">$<%= lineTotal.toFixed(2) %></td>
           </tr>
           <% }) %>
         </tbody>
@@ -61,7 +77,7 @@
         <button type="submit" class="btn btn-primary" onclick="prepareOrder('<%= group.supplier_id || 'none' %>')">Create Order</button>
       </div>
       <% } else { %>
-      <p style="opacity:0.5; font-size:var(--text-sm, 0.875rem); margin-top:0.5rem;">Assign a supplier to these items before ordering.</p>
+      <p class="supplier-group-warning">Assign a supplier to these items before ordering.</p>
       <% } %>
     </form>
   </div>
@@ -80,7 +96,7 @@
     const items = Array.from(checks).map(cb => ({
       item_id: cb.dataset.itemId,
       quantity: parseInt(cb.dataset.quantity) || 1,
-      unit_cost: parseFloat(cb.dataset.unitCost) || 0,
+      cost_per_unit: parseFloat(cb.dataset.unitCost) || 0,
     }));
     document.getElementById(`items-json-${groupId}`).value = JSON.stringify(items);
   }

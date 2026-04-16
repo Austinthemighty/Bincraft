@@ -7,7 +7,9 @@
 
 <% if (orders.length === 0) { %>
   <div class="empty-state">
-    <p>No orders yet. Check the <a href="/orders/queue">order queue</a> to create one.</p>
+    <h3>No orders yet</h3>
+    <p>When a card is scanned (or added to the queue from the dashboard), its item shows up in the order queue — group them by supplier and create a purchase order from there.</p>
+    <a href="/orders/queue" class="btn btn-primary">Open order queue</a>
   </div>
 <% } else { %>
   <table class="data-table">
@@ -25,12 +27,12 @@
     <tbody>
       <% orders.forEach(order => { %>
       <tr>
-        <td><a href="/orders/<%= order.id %>"><%= order.order_number %></a></td>
-        <td><%= order.supplier_name %></td>
-        <td><span class="badge badge-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
-        <td><%= new Date(order.created_at).toLocaleDateString() %></td>
-        <td><%= order.line_count %> line(s)</td>
-        <td class="col-number">$<%= parseFloat(order.total_cost || 0).toFixed(2) %></td>
+        <td data-label="Order #"><a href="/orders/<%= order.id %>"><%= order.order_number %></a></td>
+        <td data-label="Supplier"><%= order.supplier_name %></td>
+        <td data-label="Status"><span class="badge badge-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+        <td data-label="Date"><%= new Date(order.created_at).toLocaleDateString() %></td>
+        <td data-label="Items"><%= order.line_count %> line(s)</td>
+        <td data-label="Total" class="col-number">$<%= parseFloat(order.total_cost || 0).toFixed(2) %></td>
         <td class="col-actions">
           <a href="/orders/<%= order.id %>" class="btn btn-ghost btn-sm">View</a>
           <% if (['submitted', 'confirmed', 'shipped'].includes(order.status)) { %>

@@ -99,7 +99,7 @@
         <td><a href="/items/<%= line.item_id %>"><%= line.item_name %></a></td>
         <td class="col-number"><%= line.quantity %></td>
         <td class="col-number"><%= line.received_quantity || 0 %></td>
-        <td class="col-number">$<%= parseFloat(line.unit_cost || 0).toFixed(2) %></td>
+        <td class="col-number">$<%= parseFloat(line.unit_cost || 0).toFixed(6) %></td>
         <td class="col-number">$<%= lineTotal.toFixed(2) %></td>
       </tr>
       <% }) %>

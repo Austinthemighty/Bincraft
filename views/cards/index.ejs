@@ -1,13 +1,24 @@
 <div class="page-header">
   <h1>Cards</h1>
   <div class="page-actions">
-    <a href="/cards/print?ids=<%= cards.map(c => c.id).join(',') %>" class="btn btn-secondary" target="_blank">Print All</a>
+    <%
+      // Keep URL small: prefer item_id or status filter; only send IDs if small set.
+      let printHref = '/cards/print';
+      const params = [];
+      if (filters.status) params.push('status=' + encodeURIComponent(filters.status));
+      if (filters.item_id) params.push('item_id=' + encodeURIComponent(filters.item_id));
+      if (cards.length <= 50 && !filters.status && !filters.item_id) {
+        params.push('ids=' + cards.map(c => c.id).join(','));
+      }
+      if (params.length) printHref += '?' + params.join('&');
+    %>
+    <a href="<%= printHref %>" class="btn btn-secondary" target="_blank" rel="noopener">Print All</a>
   </div>
 </div>
 
-<form method="get" action="/cards">
+<form method="get" action="/cards" role="search" aria-label="Filter cards">
   <div class="filter-row">
-    <select name="status">
+    <select name="status" aria-label="Filter by card status">
       <option value="">All Statuses</option>
       <option value="at_location" <%= filters.status === 'at_location' ? 'selected' : '' %>>At Location</option>
       <option value="in_queue" <%= filters.status === 'in_queue' ? 'selected' : '' %>>In Queue</option>
@@ -15,14 +26,17 @@
       <option value="in_transit" <%= filters.status === 'in_transit' ? 'selected' : '' %>>In Transit</option>
       <option value="received" <%= filters.status === 'received' ? 'selected' : '' %>>Received</option>
     </select>
-    <input type="text" name="item_id" placeholder="Item ID" value="<%= filters.item_id || '' %>">
+    <input type="text" name="item_id" placeholder="Item ID" aria-label="Filter by item ID"
+           inputmode="numeric" value="<%= filters.item_id || '' %>">
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
 </form>
 
 <% if (cards.length === 0) { %>
   <div class="empty-state">
-    <p>No cards found. Generate cards from an <a href="/items">item's detail page</a>.</p>
+    <h3>No cards match your filters</h3>
+    <p>Try a different status or clear filters. New cards are created automatically when you add an item — you can also generate more from any item's detail page.</p>
+    <a href="/items" class="btn btn-secondary">Go to items</a>
   </div>
 <% } else { %>
   <div class="cards-grid">
@@ -33,7 +47,7 @@
       </a>
       <div class="card-part-number"><%= card.part_number %></div>
       <div class="card-item-name"><%= card.item_name %></div>
-      <div class="card-id-fallback"><%= (card.card_uid || '').substring(0, 8) %>...</div>
+      <div class="card-id-fallback">Card <%= card.loop_number %> · <%= (card.card_uid || '').substring(0, 8) %>...</div>
       <div class="card-footer">
         <span class="badge badge-<%= card.status %>"><%= (card.status || '').replace(/_/g, ' ') %></span>
         <a href="/cards/<%= card.id %>" class="btn btn-ghost btn-sm">Details</a>

@@ -34,12 +34,14 @@ CREATE TABLE IF NOT EXISTS locations (
 -- Items (materials/parts being tracked)
 CREATE TABLE IF NOT EXISTS items (
   id SERIAL PRIMARY KEY,
-  part_number TEXT UNIQUE NOT NULL,
+  part_number TEXT NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
   unit_of_measure TEXT NOT NULL DEFAULT 'each',
   supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
   cost_per_unit REAL,
+  pack_size INTEGER NOT NULL DEFAULT 1,
+  order_unit TEXT NOT NULL DEFAULT 'unit' CHECK (order_unit IN ('unit', 'pack')),
   location_id INTEGER REFERENCES locations(id) ON DELETE SET NULL,
   reorder_point INTEGER NOT NULL,
   reorder_quantity INTEGER NOT NULL,
@@ -48,7 +50,8 @@ CREATE TABLE IF NOT EXISTS items (
   safety_factor REAL NOT NULL DEFAULT 1.5,
   current_stock INTEGER NOT NULL DEFAULT 0,
   num_kanban_cards INTEGER,
-  label_color TEXT NOT NULL DEFAULT '#ffffff',
+  label_color TEXT NOT NULL DEFAULT '#000000',
+  supplier_url TEXT,
   notes TEXT,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -93,7 +96,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   id SERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   item_id INTEGER NOT NULL REFERENCES items(id),
-  card_id INTEGER REFERENCES cards(id),
+  card_id INTEGER REFERENCES cards(id) ON DELETE SET NULL,
   quantity INTEGER NOT NULL,
   unit_cost REAL,
   received_quantity INTEGER DEFAULT 0,
@@ -103,7 +106,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 -- Scan history (append-only audit log)
 CREATE TABLE IF NOT EXISTS scan_history (
   id SERIAL PRIMARY KEY,
-  card_id INTEGER NOT NULL REFERENCES cards(id),
+  card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
   scanned_by TEXT REFERENCES "user"(id),
   action TEXT NOT NULL CHECK (action IN ('pull', 'receive', 'putaway', 'audit')),
   previous_status TEXT,
@@ -147,4 +150,5 @@ CREATE INDEX IF NOT EXISTS idx_scan_history_card_id ON scan_history(card_id);
 CREATE INDEX IF NOT EXISTS idx_scan_history_scanned_at ON scan_history(scanned_at);
 CREATE INDEX IF NOT EXISTS idx_items_supplier_id ON items(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_items_part_number ON items(part_number);
+CREATE UNIQUE INDEX IF NOT EXISTS items_part_number_active_key ON items (part_number) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_locations_parent_id ON locations(parent_id);

@@ -1,7 +1,7 @@
 {
-  "name": "itemcards",
+  "name": "bincraft",
   "version": "1.0.0",
-  "description": "Kanban inventory card and tracking system",
+  "description": "Bincraft — Kanban inventory card and tracking system for manufacturers",
   "type": "module",
   "main": "server.js",
   "scripts": {
@@ -23,6 +23,7 @@
   "license": "ISC",
   "dependencies": {
     "better-auth": "^1.6.4",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "csv-parse": "^6.2.1",
     "dotenv": "^17.4.2",

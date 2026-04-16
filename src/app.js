@@ -1,5 +1,6 @@
 import express from 'express';
 import expressLayouts from 'express-ejs-layouts';
+import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import methodOverride from 'method-override';
@@ -45,6 +46,7 @@ export function createApp() {
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
         imgSrc: ["'self'", "data:", "blob:"],
@@ -53,12 +55,30 @@ export function createApp() {
       },
     },
   }));
-  app.use(morgan('dev'));
+  // gzip/brotli compression — big win for HTML/CSS/JSON responses
+  app.use(compression());
+
+  // Request logging: concise in prod, colorful in dev
+  const isDev = process.env.NODE_ENV !== 'production';
+  app.use(morgan(isDev ? 'dev' : 'combined', {
+    // Skip logging for static asset requests in prod to reduce noise
+    skip: (req) => !isDev && /\.(css|js|svg|woff2?|png|jpg|ico)$/.test(req.url),
+  }));
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
   app.use(methodOverride('_method'));
-  app.use(express.static(join(rootDir, 'public')));
+
+  // Static assets with long-lived browser cache + immutable hint
+  // (SVG icon, CSS, client JS — these change rarely; if you bust in the future,
+  //  add a hash to the query string or filename)
+  app.use(express.static(join(rootDir, 'public'), {
+    maxAge: isDev ? 0 : '1d',
+    etag: true,
+    lastModified: true,
+  }));
+
   app.use(flash);
   app.use(loadUser);
 

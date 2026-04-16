@@ -49,13 +49,17 @@
       <tbody>
         <% lowStock.forEach(item => { %>
         <tr>
-          <td><code><%= item.part_number %></code></td>
-          <td><a href="/items/<%= item.id %>"><%= item.name %></a></td>
-          <td><%= item.supplier_name || '-' %></td>
-          <td><span class="<%= item.current_stock <= 0 ? 'stock-out' : 'stock-low' %>"><%= item.current_stock %></span></td>
-          <td><%= item.reorder_point %></td>
-          <td><%= item.location_name || '-' %></td>
-          <td><a href="/orders/queue" class="btn btn-sm btn-secondary">Order</a></td>
+          <td data-label="Part #"><code><%= item.part_number %></code></td>
+          <td data-label="Name"><a href="/items/<%= item.id %>"><%= item.name %></a></td>
+          <td data-label="Supplier"><%= item.supplier_name || '-' %></td>
+          <td data-label="Current Stock"><span class="<%= item.current_stock <= 0 ? 'stock-out' : 'stock-low' %>"><%= item.current_stock %></span></td>
+          <td data-label="Reorder Point"><%= item.reorder_point %></td>
+          <td data-label="Location"><%= item.location_name || '-' %></td>
+          <td class="col-actions">
+            <form method="POST" action="/items/<%= item.id %>/queue" class="inline-form">
+              <button type="submit" class="btn btn-sm btn-secondary">Order</button>
+            </form>
+          </td>
         </tr>
         <% }) %>
       </tbody>
@@ -83,9 +87,9 @@
       <tbody>
         <% recentScans.forEach(scan => { %>
         <tr>
-          <td><code><%= scan.card_uid %></code></td>
-          <td><%= scan.item_name %></td>
-          <td><%= new Date(scan.scanned_at).toLocaleString() %></td>
+          <td data-label="Card"><code><%= scan.card_uid %></code></td>
+          <td data-label="Item"><%= scan.item_name %></td>
+          <td data-label="When"><%= new Date(scan.scanned_at).toLocaleString() %></td>
         </tr>
         <% }) %>
       </tbody>
@@ -113,9 +117,9 @@
       <tbody>
         <% monthlyOrders.forEach(row => { %>
         <tr>
-          <td><%= new Date(row.month).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) %></td>
-          <td><%= row.count %></td>
-          <td>$<%= parseFloat(row.total || 0).toFixed(2) %></td>
+          <td data-label="Month"><%= new Date(row.month).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) %></td>
+          <td data-label="Orders"><%= row.count %></td>
+          <td data-label="Total">$<%= parseFloat(row.total || 0).toFixed(2) %></td>
         </tr>
         <% }) %>
       </tbody>

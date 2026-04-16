@@ -77,15 +77,16 @@
     <tbody>
       <% users.forEach(u => { %>
       <tr>
-        <td><%= u.name %></td>
-        <td><%= u.email %></td>
-        <td><span class="badge badge-<%= u.role === 'admin' ? 'submitted' : u.role === 'viewer' ? 'in_queue' : 'at_location' %>"><%= u.role || 'user' %></span></td>
-        <td><%= new Date(u.createdAt).toLocaleDateString() %></td>
+        <td data-label="Name"><%= u.name %></td>
+        <td data-label="Email"><%= u.email %></td>
+        <td data-label="Role"><span class="badge badge-<%= u.role === 'admin' ? 'submitted' : u.role === 'viewer' ? 'in_queue' : 'at_location' %>"><%= u.role || 'user' %></span></td>
+        <td data-label="Created"><%= new Date(u.createdAt).toLocaleDateString() %></td>
         <% if (currentUser.role === 'admin') { %>
         <td class="col-actions">
           <% if (u.id !== currentUser.id) { %>
           <form method="POST" action="/settings/users/<%= u.id %>/role" class="inline-form flex-gap">
-            <select name="role" style="width:auto;min-width:80px;">
+            <label class="visually-hidden" for="role-<%= u.id %>">Role for <%= u.name %></label>
+            <select name="role" id="role-<%= u.id %>" style="width:auto;min-width:80px;">
               <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>Admin</option>
               <option value="user" <%= u.role === 'user' || !u.role ? 'selected' : '' %>>User</option>
               <option value="viewer" <%= u.role === 'viewer' ? 'selected' : '' %>>Viewer</option>

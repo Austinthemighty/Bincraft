@@ -25,7 +25,7 @@ export async function sendOrderEmail(supplier, order, orderItems) {
   ).join('\n');
 
   await t.sendMail({
-    from: process.env.SMTP_FROM || 'noreply@itemcards.local',
+    from: process.env.SMTP_FROM || 'noreply@bincraft.local',
     to: supplier.email,
     subject: `Purchase Order ${order.order_number}`,
     text: `Dear ${supplier.contact_name || supplier.name},\n\nPlease find our purchase order below:\n\nOrder: ${order.order_number}\nDate: ${new Date().toLocaleDateString()}\n\nItems:\n${itemLines}\n\nPlease confirm receipt of this order.\n\nThank you.`,

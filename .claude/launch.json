@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "itemcards-dev",
+      "name": "bincraft-dev",
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.js"],
       "port": 80,

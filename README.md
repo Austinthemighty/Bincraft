@@ -1,12 +1,17 @@
-# ItemCards
+# Bincraft
 
 Kanban-based inventory card and tracking system for manufacturers. Create scannable QR-coded Kanban cards for inventory items, scan them to trigger reorder workflows, manage purchase orders, and track stock levels.
+
+![Dashboard](docs/screenshots/dashboard.png)
 
 ## Features
 
 - **Kanban Cards** — Generate QR-coded cards for inventory items. Print labels for the shop floor with Avery label support.
 - **Avery Label Printing** — Print cards to Avery 5160, 5163, 5164, 5167, 5195, 5168, 6572 label sheets, or custom format. Wide labels use a horizontal layout (QR left, text right); square labels use vertical (QR top, text below). Content auto-scales to fit.
 - **Label Color Coding** — Assign a color to each item (e.g., red for M6 bolts, blue for M8). The item name prints in that color on labels for quick visual identification on the shop floor.
+- **Quick Reorder Links** — Each item can store a supplier URL. A "Reorder" button on the item page opens the URL in a new tab for fast purchasing.
+- **Pack Pricing** — Enter cost per individual unit and pack size; the app computes pack price automatically. Each item chooses whether to order by individual unit or by pack. When receiving by pack, stock increments by `quantity × pack_size`.
+- **Auto-Receive** — Marking an order as "received" from the status dropdown auto-processes all line items: fills remaining quantities, adds to stock, resets cards to at_location, and logs receipts at each item's default storage location.
 - **QR Scanning** — Scan cards via phone/tablet camera to pull items into the order queue.
 - **Order Management** — Create purchase orders from queued cards, track status through submission, shipping, and receiving.
 - **Receiving & Putaway** — Receive shipments line-by-line with location tracking. Cards cycle back to shelf automatically.
@@ -16,6 +21,17 @@ Kanban-based inventory card and tracking system for manufacturers. Create scanna
 - **First-Run Setup** — On first launch with an empty database, a setup page guides you through creating the initial admin account.
 - **Settings** — Configurable App URL for QR generation. Bulk QR code regeneration. User management.
 - **Mobile Responsive** — Hamburger menu with slide-in sidebar on phones, collapsible icon sidebar on tablets, full sidebar on desktop.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Items](docs/screenshots/items.png) | ![Cards](docs/screenshots/cards.png) |
+| **Items** — Part numbers, stock levels, reorder points | **Cards** — QR-coded Kanban cards with status badges |
+| ![Orders](docs/screenshots/orders.png) | ![Print](docs/screenshots/print.png) |
+| **Orders** — Purchase orders grouped by supplier | **Print** — Avery label print preview with format picker |
+| ![Suppliers](docs/screenshots/suppliers.png) | ![Locations](docs/screenshots/locations.png) |
+| **Suppliers** — Contact info and lead times | **Locations** — Facility → Area → Location hierarchy |
 
 ## Tech Stack
 
@@ -42,7 +58,7 @@ cd ItemCards
 npm install
 
 # Create the database
-createdb itemcards
+createdb bincraft
 
 # Copy and edit environment config
 cp .env.example .env
@@ -126,12 +142,12 @@ HTTPS_PORT=8443
 | `SMTP_PORT` | `587` | SMTP port |
 | `SMTP_USER` | — | SMTP username |
 | `SMTP_PASS` | — | SMTP password |
-| `SMTP_FROM` | `noreply@itemcards.local` | From address for emails |
+| `SMTP_FROM` | `noreply@bincraft.local` | From address for emails |
 
 ## Project Structure
 
 ```
-ItemCards/
+bincraft/
   server.js                    # Entry point
   src/
     app.js                     # Express app setup

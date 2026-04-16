@@ -69,15 +69,71 @@ router.post('/scan', async (req, res) => {
       new_status: newStatus,
     });
 
+    // Pull current stock for the consumption UI
+    const stockResult = await query(
+      'SELECT current_stock, unit_of_measure FROM items WHERE id = $1',
+      [card.item_id]
+    );
+    const stock = stockResult.rows[0] || {};
+
     res.json({
       action_label: actionLabel,
       message,
       card: { id: card.id, card_uid: card.card_uid, status: newStatus },
-      item: { id: card.item_id, part_number: card.part_number, name: card.item_name },
+      item: {
+        id: card.item_id,
+        part_number: card.part_number,
+        name: card.item_name,
+        current_stock: stock.current_stock,
+        unit_of_measure: stock.unit_of_measure,
+      },
     });
   } catch (err) {
     console.error('API scan error:', err);
     res.status(500).json({ error: 'Failed to process scan' });
+  }
+});
+
+// Record consumption (remove stock from an item)
+router.post('/consume', async (req, res) => {
+  try {
+    const { item_id, quantity } = req.body;
+    const qty = parseInt(quantity, 10);
+    if (!item_id || !qty || qty <= 0) {
+      return res.status(400).json({ error: 'item_id and positive quantity required' });
+    }
+
+    const result = await query(
+      `UPDATE items
+       SET current_stock = GREATEST(0, current_stock - $2),
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING current_stock, reorder_point, name, part_number`,
+      [item_id, qty]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const item = result.rows[0];
+    const belowReorder = item.current_stock <= item.reorder_point;
+
+    res.json({
+      success: true,
+      item: {
+        id: parseInt(item_id, 10),
+        name: item.name,
+        part_number: item.part_number,
+        current_stock: item.current_stock,
+        reorder_point: item.reorder_point,
+        below_reorder: belowReorder,
+      },
+      quantity_removed: qty,
+    });
+  } catch (err) {
+    console.error('API consume error:', err);
+    res.status(500).json({ error: 'Failed to record consumption' });
   }
 });
 

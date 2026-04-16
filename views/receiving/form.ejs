@@ -13,7 +13,7 @@
     <div class="section-header">
       <h3>Line Items</h3>
     </div>
-    <table class="data-table">
+    <table class="data-table keep-layout">
       <thead>
         <tr>
           <th>Part #</th>
@@ -35,17 +35,23 @@
           <td class="col-number"><%= alreadyReceived %></td>
           <td class="col-number">
             <input type="number"
-                   name="lines[<%= line.id %>][received_quantity]"
+                   name="lines[line_<%= line.id %>][received_quantity]"
+                   class="qty-input"
+                   aria-label="Quantity received for <%= line.item_name %>"
+                   inputmode="numeric"
                    min="0"
                    max="<%= remaining %>"
-                   value="<%= remaining %>"
-                   style="width:80px">
+                   value="<%= remaining %>">
+            <% if (line.order_unit === 'pack' && line.pack_size > 1) { %>
+            <span class="qty-hint">packs of <%= line.pack_size %></span>
+            <% } %>
           </td>
           <td>
-            <select name="lines[<%= line.id %>][location_id]">
+            <select name="lines[line_<%= line.id %>][location_id]"
+                    aria-label="Putaway location for <%= line.item_name %>">
               <option value="">Default</option>
               <% locations.forEach(loc => { %>
-              <option value="<%= loc.id %>"><%= loc.name %> (<%= loc.type %>)</option>
+              <option value="<%= loc.id %>" <%= line.item_location_id == loc.id ? 'selected' : '' %>><%= loc.name %> (<%= loc.type %>)</option>
               <% }) %>
             </select>
           </td>

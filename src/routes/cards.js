@@ -48,46 +48,39 @@ router.get('/', async (req, res) => {
 // Print page for cards
 router.get('/print', async (req, res) => {
   try {
-    const { ids, item_id, format } = req.query;
-    let result;
+    const { ids, item_id, status, format } = req.query;
+    const conditions = [];
+    const params = [];
+    let idx = 1;
+
+    const baseSelect = `SELECT c.*, i.name AS item_name, i.part_number, i.reorder_quantity, i.label_color,
+              s.name AS supplier_name, l.name AS location_name
+       FROM cards c
+       JOIN items i ON c.item_id = i.id
+       LEFT JOIN suppliers s ON i.supplier_id = s.id
+       LEFT JOIN locations l ON c.location_id = l.id`;
 
     if (ids) {
       const idList = ids.split(',').map((id) => parseInt(id, 10)).filter(Boolean);
-      result = await query(
-        `SELECT c.*, i.name AS item_name, i.part_number, i.reorder_quantity, i.label_color,
-                s.name AS supplier_name, l.name AS location_name
-         FROM cards c
-         JOIN items i ON c.item_id = i.id
-         LEFT JOIN suppliers s ON i.supplier_id = s.id
-         LEFT JOIN locations l ON c.location_id = l.id
-         WHERE c.id = ANY($1)
-         ORDER BY c.id`,
-        [idList]
-      );
-    } else if (item_id) {
-      result = await query(
-        `SELECT c.*, i.name AS item_name, i.part_number, i.reorder_quantity, i.label_color,
-                s.name AS supplier_name, l.name AS location_name
-         FROM cards c
-         JOIN items i ON c.item_id = i.id
-         LEFT JOIN suppliers s ON i.supplier_id = s.id
-         LEFT JOIN locations l ON c.location_id = l.id
-         WHERE c.item_id = $1
-         ORDER BY c.loop_number`,
-        [item_id]
-      );
-    } else {
-      // Print all
-      result = await query(
-        `SELECT c.*, i.name AS item_name, i.part_number, i.reorder_quantity, i.label_color,
-                s.name AS supplier_name, l.name AS location_name
-         FROM cards c
-         JOIN items i ON c.item_id = i.id
-         LEFT JOIN suppliers s ON i.supplier_id = s.id
-         LEFT JOIN locations l ON c.location_id = l.id
-         ORDER BY i.part_number, c.loop_number`
-      );
+      // Cap at 1000 IDs to prevent abuse / giant queries
+      if (idList.length > 1000) idList.length = 1000;
+      conditions.push(`c.id = ANY($${idx++})`);
+      params.push(idList);
     }
+    if (item_id) {
+      conditions.push(`c.item_id = $${idx++}`);
+      params.push(item_id);
+    }
+    if (status && ['at_location', 'in_queue', 'ordered', 'in_transit', 'received'].includes(status)) {
+      conditions.push(`c.status = $${idx++}`);
+      params.push(status);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await query(
+      `${baseSelect} ${where} ORDER BY i.part_number, c.loop_number LIMIT 2000`,
+      params
+    );
 
     const appUrl = await getAppUrl();
     const cards = await Promise.all(

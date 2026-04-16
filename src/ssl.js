@@ -149,7 +149,7 @@ function generateSelfSigned() {
 
     console.log('[SSL] Generating self-signed certificate...');
 
-    const subj = '/CN=localhost/O=ItemCards/OU=Development';
+    const subj = '/CN=localhost/O=Bincraft/OU=Development';
     const san = 'subjectAltName=DNS:localhost,IP:127.0.0.1,IP:::1';
 
     execSync(

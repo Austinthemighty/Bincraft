@@ -1,7 +1,10 @@
 <div class="page-header">
   <h1>Suppliers</h1>
   <div class="page-actions">
-    <a href="/suppliers/new" class="btn btn-primary">+ New Supplier</a>
+    <a href="/suppliers/new" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
+      New Supplier
+    </a>
   </div>
 </div>
 
@@ -14,8 +17,9 @@
 
 <% if (suppliers.length === 0) { %>
   <div class="empty-state">
-    <p>No suppliers found.</p>
-    <a href="/suppliers/new" class="btn btn-primary">Create one</a>
+    <h3>No suppliers yet</h3>
+    <p>Add the vendors you buy from. Items get linked to a supplier so orders can be grouped and reliability tracked over time.</p>
+    <a href="/suppliers/new" class="btn btn-primary">Add a supplier</a>
   </div>
 <% } else { %>
   <table class="data-table">
@@ -31,11 +35,11 @@
     <tbody>
       <% suppliers.forEach(supplier => { %>
       <tr>
-        <td><a href="/suppliers/<%= supplier.id %>"><%= supplier.name %></a></td>
-        <td><%= supplier.contact_name || '-' %></td>
-        <td><% if (supplier.email) { %><a href="mailto:<%= supplier.email %>"><%= supplier.email %></a><% } else { %>-<% } %></td>
-        <td><%= supplier.phone || '-' %></td>
-        <td>
+        <td data-label="Name"><a href="/suppliers/<%= supplier.id %>"><%= supplier.name %></a></td>
+        <td data-label="Contact"><%= supplier.contact_name || '-' %></td>
+        <td data-label="Email"><% if (supplier.email) { %><a href="mailto:<%= supplier.email %>"><%= supplier.email %></a><% } else { %>-<% } %></td>
+        <td data-label="Phone"><%= supplier.phone || '-' %></td>
+        <td class="col-actions">
           <a href="/suppliers/<%= supplier.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
           <form method="POST" action="/suppliers/<%= supplier.id %>?_method=DELETE" class="inline-form">
             <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this supplier?">Delete</button>
