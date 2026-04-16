@@ -57,12 +57,12 @@ cd ItemCards
 # Install dependencies
 npm install
 
-# Create the database
-createdb bincraft
-
 # Copy and edit environment config
 cp .env.example .env
 # Edit .env — set DATABASE_URL=postgres://USER@localhost:5432/bincraft
+
+# Create the database
+createdb bincraft
 
 # Create auth tables first (users, sessions — app tables reference them)
 npm run db:migrate
