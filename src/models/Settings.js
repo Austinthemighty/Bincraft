@@ -23,5 +23,7 @@ export async function getAll() {
 }
 
 export async function getAppUrl() {
-  return (await get('app_url')) || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
+  // Env var takes precedence — single source of truth when deploying
+  if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+  return (await get('app_url')) || 'https://localhost';
 }

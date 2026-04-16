@@ -9,20 +9,26 @@ const router = Router();
 router.use(requireAuth);
 
 router.get('/', async (req, res) => {
-  const settings = await Settings.getAll();
-  const usersResult = await query(
-    'SELECT id, name, email, role, "createdAt" FROM "user" ORDER BY "createdAt"'
-  );
+  const [settings, usersResult] = await Promise.all([
+    Settings.getAll(),
+    query('SELECT id, name, email, role, "createdAt" FROM "user" ORDER BY "createdAt"'),
+  ]);
   res.render('settings/index', {
     title: 'Settings',
     activePage: 'settings',
     settings,
     users: usersResult.rows,
+    appUrl: await Settings.getAppUrl(),
+    appUrlFromEnv: !!process.env.BETTER_AUTH_URL,
   });
 });
 
 // Update app URL
 router.post('/app-url', async (req, res) => {
+  if (process.env.BETTER_AUTH_URL) {
+    res.flash('error', 'App URL is set by the BETTER_AUTH_URL environment variable and cannot be changed here.');
+    return res.redirect('/settings');
+  }
   try {
     let { app_url } = req.body;
     app_url = app_url.replace(/\/+$/, '');

@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 
 -- Insert default app URL if not exists
-INSERT INTO app_settings (key, value) VALUES ('app_url', 'http://localhost:3000')
+INSERT INTO app_settings (key, value) VALUES ('app_url', 'https://localhost')
 ON CONFLICT (key) DO NOTHING;
 
 -- Indexes

@@ -8,17 +8,25 @@
     <p class="text-muted mb-md" style="font-size:var(--text-sm)">
       Base URL used for QR code generation. Update this if your app moves to a new domain.
     </p>
+    <% if (appUrlFromEnv) { %>
+    <div class="form-group">
+      <label>Base URL</label>
+      <input type="url" value="<%= appUrl %>" disabled style="opacity:0.6;cursor:not-allowed;">
+      <p class="field-hint">Set by <code>BETTER_AUTH_URL</code> in your environment. Edit the <code>.env</code> file to change it.</p>
+    </div>
+    <% } else { %>
     <form method="POST" action="/settings/app-url">
       <div class="form-group">
         <label for="app_url">Base URL</label>
         <input type="url" id="app_url" name="app_url"
-               value="<%= settings.app_url || 'http://localhost:3000' %>"
+               value="<%= appUrl %>"
                placeholder="https://your-domain.com" required>
       </div>
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">Save URL</button>
       </div>
     </form>
+    <% } %>
   </div>
 
   <div class="panel">
