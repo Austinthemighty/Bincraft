@@ -254,36 +254,32 @@ router.put('/:id', async (req, res) => {
         [req.params.id]
       );
 
-      for (const line of linesResult.rows) {
-        const remaining = line.quantity - line.received_so_far;
-        if (remaining <= 0) continue;
+      await Promise.all(linesResult.rows
+        .filter(line => line.quantity - line.received_so_far > 0)
+        .map(async line => {
+          const remaining = line.quantity - line.received_so_far;
+          const multiplier = line.order_unit === 'pack' ? (line.pack_size || 1) : 1;
+          const updates = [
+            query(
+              `UPDATE order_items SET received_quantity = COALESCE(received_quantity, 0) + $2 WHERE id = $1`,
+              [line.id, remaining]
+            ),
+            query(
+              `UPDATE items SET current_stock = current_stock + $2, updated_at = NOW() WHERE id = $1`,
+              [line.item_id, remaining * multiplier]
+            ),
+          ];
+          if (line.item_location_id) {
+            updates.push(query(
+              `INSERT INTO receiving_log (order_id, order_item_id, quantity_received, location_id, received_by)
+               VALUES ($1, $2, $3, $4, $5)`,
+              [req.params.id, line.id, remaining, line.item_location_id, req.authUser.id]
+            ));
+          }
+          return Promise.all(updates);
+        })
+      );
 
-        await query(
-          `UPDATE order_items SET received_quantity = COALESCE(received_quantity, 0) + $2
-           WHERE id = $1`,
-          [line.id, remaining]
-        );
-
-        // If ordered by pack, each unit adds pack_size to stock
-        const multiplier = line.order_unit === 'pack' ? (line.pack_size || 1) : 1;
-        const stockIncrement = remaining * multiplier;
-
-        await query(
-          `UPDATE items SET current_stock = current_stock + $2, updated_at = NOW()
-           WHERE id = $1`,
-          [line.item_id, stockIncrement]
-        );
-
-        if (line.item_location_id) {
-          await query(
-            `INSERT INTO receiving_log (order_id, order_item_id, quantity_received, location_id, received_by)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [req.params.id, line.id, remaining, line.item_location_id, req.authUser.id]
-          );
-        }
-      }
-
-      // Reset cards tied to this order back to at_location
       await query(
         `UPDATE cards SET status = 'at_location', updated_at = NOW()
          WHERE item_id IN (SELECT item_id FROM order_items WHERE order_id = $1)

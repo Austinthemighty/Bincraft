@@ -62,16 +62,19 @@ createdb bincraft
 
 # Copy and edit environment config
 cp .env.example .env
-# Edit .env with your PostgreSQL connection string
+# Edit .env — set DATABASE_URL=postgres://USER@localhost:5432/bincraft
 
-# Run better-auth migrations (creates auth tables)
-echo "y" | npx @better-auth/cli migrate
+# Create auth tables first (users, sessions — app tables reference them)
+npm run db:migrate
+
+# Create app tables (items, cards, orders, etc.)
+npm run db:init
 
 # Start the server
 npm start
 ```
 
-On first run, the app schema tables are created automatically. You'll be redirected to a setup page to create your admin account.
+On first run you'll be redirected to a setup page to create your admin account. To load demo data run `npm run db:seed` after setup.
 
 ## Scripts
 
@@ -79,6 +82,8 @@ On first run, the app schema tables are created automatically. You'll be redirec
 |---------|-------------|
 | `npm start` | Start the server |
 | `npm run dev` | Start with file watching (auto-restart) |
+| `npm run db:init` | Create app tables from schema.sql |
+| `npm run db:migrate` | Create auth tables (better-auth) |
 | `npm run db:seed` | Load demo data (3 suppliers, 10 items, 21 cards, 1 order) |
 
 ## SSL / HTTPS

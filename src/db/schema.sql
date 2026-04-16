@@ -3,7 +3,7 @@
 -- Extend better-auth user table with role
 DO $$ BEGIN
   ALTER TABLE "user" ADD COLUMN role TEXT NOT NULL DEFAULT 'user';
-EXCEPTION WHEN duplicate_column THEN NULL;
+EXCEPTION WHEN duplicate_column OR undefined_table THEN NULL;
 END $$;
 
 -- Suppliers
@@ -152,3 +152,6 @@ CREATE INDEX IF NOT EXISTS idx_items_supplier_id ON items(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_items_part_number ON items(part_number);
 CREATE UNIQUE INDEX IF NOT EXISTS items_part_number_active_key ON items (part_number) WHERE is_active = true;
 CREATE INDEX IF NOT EXISTS idx_locations_parent_id ON locations(parent_id);
+CREATE INDEX IF NOT EXISTS idx_locations_type ON locations(type);
+CREATE INDEX IF NOT EXISTS idx_order_items_item_id ON order_items(item_id);
+CREATE INDEX IF NOT EXISTS idx_items_is_active ON items(is_active);
