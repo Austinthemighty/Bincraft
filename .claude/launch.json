@@ -5,7 +5,8 @@
       "name": "itemcards-dev",
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.js"],
-      "port": 3000
+      "port": 80,
+      "autoPort": false
     }
   ]
 }

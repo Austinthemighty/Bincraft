@@ -65,14 +65,63 @@ On first run, the app schema tables are created automatically. You'll be redirec
 | `npm run dev` | Start with file watching (auto-restart) |
 | `npm run db:seed` | Load demo data (3 suppliers, 10 items, 21 cards, 1 order) |
 
+## SSL / HTTPS
+
+The server runs on **ports 80 (HTTP) and 443 (HTTPS)** by default. SSL is configured via the `SSL_MODE` environment variable.
+
+### Modes
+
+| Mode | Behavior |
+|------|----------|
+| `auto` (default) | Auto-generates a self-signed certificate on first run. Browsers show a warning. Good for local dev. |
+| `letsencrypt` | Obtains a free certificate from Let's Encrypt via Certbot. Supports HTTP-01 challenge (port 80) or Cloudflare DNS-01 challenge. Auto-renews. |
+| `custom` | Uses your own certificate files specified by `SSL_CERT` and `SSL_KEY` paths. |
+| `off` | Disables HTTPS entirely. Serves HTTP-only on port 80. |
+
+### Let's Encrypt Setup
+
+**HTTP-01 challenge** (requires port 80 accessible from the internet):
+```bash
+SSL_MODE=letsencrypt
+SSL_DOMAIN=inventory.yourcompany.com
+SSL_EMAIL=admin@yourcompany.com
+```
+
+**Cloudflare DNS-01 challenge** (no port 80 needed):
+```bash
+SSL_MODE=letsencrypt
+SSL_DOMAIN=inventory.yourcompany.com
+SSL_EMAIL=admin@yourcompany.com
+SSL_CF_API_TOKEN=your-cloudflare-api-token
+SSL_CF_ZONE_ID=your-zone-id
+```
+
+Requires `certbot` installed. For Cloudflare DNS, also install `python3-certbot-dns-cloudflare`.
+
+### Custom Ports
+
+If ports 80/443 require elevated privileges, use higher ports:
+```bash
+HTTP_PORT=8080
+HTTPS_PORT=8443
+```
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT` | `3000` | Server port |
+| `HTTP_PORT` | `80` | HTTP server port |
+| `HTTPS_PORT` | `443` | HTTPS server port |
+| `SSL_MODE` | `auto` | SSL mode: `auto`, `letsencrypt`, `custom`, or `off` |
+| `SSL_CERT` | — | Path to certificate PEM file (custom mode) |
+| `SSL_KEY` | — | Path to private key PEM file (custom mode) |
+| `SSL_DOMAIN` | — | Domain for Let's Encrypt |
+| `SSL_EMAIL` | — | Email for Let's Encrypt notifications |
+| `SSL_CF_API_TOKEN` | — | Cloudflare API token (DNS-01 challenge) |
+| `SSL_CF_ZONE_ID` | — | Cloudflare zone ID (DNS-01 challenge) |
 | `DATABASE_URL` | — | PostgreSQL connection string |
 | `BETTER_AUTH_SECRET` | — | Session secret (change in production) |
-| `BETTER_AUTH_URL` | `http://localhost:3000` | App base URL |
+| `BETTER_AUTH_URL` | `https://localhost` | App base URL |
 | `SMTP_HOST` | — | Optional SMTP host for supplier email notifications |
 | `SMTP_PORT` | `587` | SMTP port |
 | `SMTP_USER` | — | SMTP username |

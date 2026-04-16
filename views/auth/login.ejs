@@ -26,38 +26,47 @@
 </div>
 
 <script>
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('submit-btn');
-  const errEl = document.getElementById('auth-error');
-  const originalText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Signing in...';
-  errEl.style.display = 'none';
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('login-form');
+  if (!form) return;
 
-  try {
-    const res = await fetch('/api/auth/sign-in/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      window.location.href = '/dashboard';
-    } else {
-      errEl.textContent = data.message || 'Invalid email or password';
-      errEl.style.display = 'block';
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const errEl = document.getElementById('auth-error');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    if (errEl) errEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/auth/sign-in/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.href = '/dashboard';
+      } else {
+        if (errEl) {
+          errEl.textContent = data.message || 'Invalid email or password';
+          errEl.style.display = 'block';
+        }
+      }
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
-  } catch (err) {
-    errEl.textContent = 'Network error. Please try again.';
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+  });
 });
 </script>

@@ -31,46 +31,54 @@
 </div>
 
 <script>
-document.getElementById('setup-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('submit-btn');
-  const errEl = document.getElementById('auth-error');
-  const originalText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Creating account...';
-  errEl.style.display = 'none';
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('setup-form');
+  if (!form) return;
 
-  try {
-    const res = await fetch('/api/auth/sign-up/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      // Set the first user as admin
-      await fetch('/api/setup-admin', {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const errEl = document.getElementById('auth-error');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Creating account...';
+    if (errEl) errEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/auth/sign-up/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ userId: data.user.id }),
+        body: JSON.stringify({
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value,
+        }),
       });
-      window.location.href = '/dashboard';
-    } else {
-      errEl.textContent = data.message || 'Failed to create account.';
-      errEl.style.display = 'block';
+      const data = await res.json();
+      if (res.ok) {
+        await fetch('/api/setup-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ userId: data.user.id }),
+        });
+        window.location.href = '/dashboard';
+      } else {
+        if (errEl) {
+          errEl.textContent = data.message || 'Failed to create account.';
+          errEl.style.display = 'block';
+        }
+      }
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
-  } catch (err) {
-    errEl.textContent = 'Network error. Please try again.';
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+  });
 });
 </script>
