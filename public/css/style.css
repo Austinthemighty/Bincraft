@@ -630,6 +630,68 @@ label {
   margin-top: var(--space-xl);
 }
 
+/* --- Checkboxes & Radios --- */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  cursor: pointer;
+  vertical-align: middle;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+}
+
+input[type="radio"] {
+  border-radius: 50%;
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+input[type="checkbox"]:hover:not(:checked),
+input[type="radio"]:hover:not(:checked) {
+  border-color: var(--color-primary);
+}
+
 /* Search bar */
 .search-bar {
   display: flex;
@@ -1670,11 +1732,19 @@ dd {
     padding: var(--space-md);
   }
 
-  /* Checkboxes easier to tap */
+  /* Checkboxes: slightly larger tap target on touch screens */
   input[type="checkbox"],
   input[type="radio"] {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+  }
+
+  input[type="checkbox"]:checked::after {
+    left: 5px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
   }
 
   /* Number inputs: don't cram them at 80px — let them breathe */
