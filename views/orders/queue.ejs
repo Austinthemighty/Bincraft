@@ -1,0 +1,87 @@
+<ul class="breadcrumbs">
+  <li><a href="/orders">Orders</a></li>
+  <li>Order Queue</li>
+</ul>
+
+<div class="page-header">
+  <h1>Order Queue</h1>
+</div>
+
+<% const suppliers = Object.values(grouped); %>
+<% if (suppliers.length === 0) { %>
+  <div class="empty-state">
+    <p>No items need reordering right now. All cards are at their locations.</p>
+  </div>
+<% } else { %>
+  <% suppliers.forEach(group => { %>
+  <div class="supplier-group">
+    <h3><%= group.supplier_name || 'No Supplier Assigned' %>
+      <% if (group.supplier_id) { %>
+        <span style="opacity:0.5; font-weight:normal; font-size:var(--text-sm, 0.875rem);">(<%= Object.keys(group.items).length %> items)</span>
+      <% } %>
+    </h3>
+
+    <form method="POST" action="/orders" id="order-form-<%= group.supplier_id || 'none' %>">
+      <input type="hidden" name="supplier_id" value="<%= group.supplier_id || '' %>">
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:2rem"><input type="checkbox" onchange="toggleAll(this, '<%= group.supplier_id || 'none' %>')"></th>
+            <th>Part #</th>
+            <th>Name</th>
+            <th class="col-number">Reorder Qty</th>
+            <th class="col-number">Cost</th>
+            <th class="col-number">Card Count</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% Object.values(group.items).forEach(item => { %>
+          <tr>
+            <td>
+              <input type="checkbox" class="item-check-<%= group.supplier_id || 'none' %>"
+                     data-item-id="<%= item.id %>"
+                     data-quantity="<%= item.reorder_quantity || item.card_count %>"
+                     data-unit-cost="<%= item.cost_per_unit || 0 %>">
+            </td>
+            <td><code><%= item.part_number %></code></td>
+            <td><a href="/items/<%= item.id %>"><%= item.name %></a></td>
+            <td class="col-number"><%= item.reorder_quantity || '-' %></td>
+            <td class="col-number">$<%= parseFloat(item.cost_per_unit || 0).toFixed(2) %></td>
+            <td class="col-number"><%= item.card_count %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <input type="hidden" name="items" id="items-json-<%= group.supplier_id || 'none' %>" value="[]">
+
+      <% if (group.supplier_id) { %>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" onclick="prepareOrder('<%= group.supplier_id || 'none' %>')">Create Order</button>
+      </div>
+      <% } else { %>
+      <p style="opacity:0.5; font-size:var(--text-sm, 0.875rem); margin-top:0.5rem;">Assign a supplier to these items before ordering.</p>
+      <% } %>
+    </form>
+  </div>
+  <% }) %>
+<% } %>
+
+<script>
+  function toggleAll(source, groupId) {
+    document.querySelectorAll(`.item-check-${groupId}`).forEach(cb => {
+      cb.checked = source.checked;
+    });
+  }
+
+  function prepareOrder(groupId) {
+    const checks = document.querySelectorAll(`.item-check-${groupId}:checked`);
+    const items = Array.from(checks).map(cb => ({
+      item_id: cb.dataset.itemId,
+      quantity: parseInt(cb.dataset.quantity) || 1,
+      unit_cost: parseFloat(cb.dataset.unitCost) || 0,
+    }));
+    document.getElementById(`items-json-${groupId}`).value = JSON.stringify(items);
+  }
+</script>

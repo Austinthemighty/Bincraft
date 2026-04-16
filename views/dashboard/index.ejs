@@ -1,0 +1,124 @@
+<div class="page-header">
+  <h1>Dashboard</h1>
+</div>
+
+<div class="stats-row">
+  <div class="stat-metric">
+    <div class="stat-value"><%= stats.items %></div>
+    <div class="stat-label">Active Items</div>
+    <a href="/items" class="text-muted">View all items</a>
+  </div>
+  <div class="stat-metric">
+    <div class="stat-value"><%= stats.cards %></div>
+    <div class="stat-label">Total Cards</div>
+    <a href="/cards" class="text-muted">View all cards</a>
+  </div>
+  <div class="stat-metric">
+    <div class="stat-value"><%= stats.suppliers %></div>
+    <div class="stat-label">Suppliers</div>
+    <a href="/suppliers" class="text-muted">View all suppliers</a>
+  </div>
+  <div class="stat-metric">
+    <div class="stat-value"><%= stats.openOrders %></div>
+    <div class="stat-label">Open Orders</div>
+    <a href="/orders" class="text-muted">View all orders</a>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Low Stock Alerts</h2>
+  </div>
+  <% if (lowStock.length === 0) { %>
+    <div class="empty-state">
+      <p>All items are above reorder point.</p>
+    </div>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Part #</th>
+          <th>Name</th>
+          <th>Supplier</th>
+          <th>Current Stock</th>
+          <th>Reorder Point</th>
+          <th>Location</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% lowStock.forEach(item => { %>
+        <tr>
+          <td><code><%= item.part_number %></code></td>
+          <td><a href="/items/<%= item.id %>"><%= item.name %></a></td>
+          <td><%= item.supplier_name || '-' %></td>
+          <td><span class="<%= item.current_stock <= 0 ? 'stock-out' : 'stock-low' %>"><%= item.current_stock %></span></td>
+          <td><%= item.reorder_point %></td>
+          <td><%= item.location_name || '-' %></td>
+          <td><a href="/orders/queue" class="btn btn-sm btn-secondary">Order</a></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Recent Scans</h2>
+  </div>
+  <% if (recentScans.length === 0) { %>
+    <div class="empty-state">
+      <p>No scans recorded yet.</p>
+    </div>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Card</th>
+          <th>Item</th>
+          <th>When</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% recentScans.forEach(scan => { %>
+        <tr>
+          <td><code><%= scan.card_uid %></code></td>
+          <td><%= scan.item_name %></td>
+          <td><%= new Date(scan.scanned_at).toLocaleString() %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Monthly Orders</h2>
+  </div>
+  <% if (monthlyOrders.length === 0) { %>
+    <div class="empty-state">
+      <p>No order data yet.</p>
+    </div>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Orders</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% monthlyOrders.forEach(row => { %>
+        <tr>
+          <td><%= new Date(row.month).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) %></td>
+          <td><%= row.count %></td>
+          <td>$<%= parseFloat(row.total || 0).toFixed(2) %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

@@ -1,0 +1,44 @@
+<div class="page-header">
+  <h1>Orders</h1>
+  <div class="page-actions">
+    <a href="/orders/queue" class="btn btn-primary">Order Queue</a>
+  </div>
+</div>
+
+<% if (orders.length === 0) { %>
+  <div class="empty-state">
+    <p>No orders yet. Check the <a href="/orders/queue">order queue</a> to create one.</p>
+  </div>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Order #</th>
+        <th>Supplier</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Items</th>
+        <th class="col-number">Total</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% orders.forEach(order => { %>
+      <tr>
+        <td><a href="/orders/<%= order.id %>"><%= order.order_number %></a></td>
+        <td><%= order.supplier_name %></td>
+        <td><span class="badge badge-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+        <td><%= new Date(order.created_at).toLocaleDateString() %></td>
+        <td><%= order.line_count %> line(s)</td>
+        <td class="col-number">$<%= parseFloat(order.total_cost || 0).toFixed(2) %></td>
+        <td class="col-actions">
+          <a href="/orders/<%= order.id %>" class="btn btn-ghost btn-sm">View</a>
+          <% if (['submitted', 'confirmed', 'shipped'].includes(order.status)) { %>
+            <a href="/receiving/<%= order.id %>" class="btn btn-ghost btn-sm">Receive</a>
+          <% } %>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>

@@ -1,0 +1,49 @@
+<ul class="breadcrumbs">
+  <li><a href="/suppliers">Suppliers</a></li>
+  <li><%= typeof supplier !== 'undefined' && supplier ? 'Edit' : 'New' %> Supplier</li>
+</ul>
+
+<h1><%= typeof supplier !== 'undefined' && supplier ? `Edit ${supplier.name}` : 'New Supplier' %></h1>
+
+<form method="POST"
+      action="<%= typeof supplier !== 'undefined' && supplier ? `/suppliers/${supplier.id}?_method=PUT` : '/suppliers' %>">
+
+  <div class="form-group">
+    <label for="name">Name *</label>
+    <input type="text" id="name" name="name" required
+           value="<%= typeof supplier !== 'undefined' && supplier ? supplier.name : '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="contact_name">Contact Name</label>
+    <input type="text" id="contact_name" name="contact_name"
+           value="<%= typeof supplier !== 'undefined' && supplier ? (supplier.contact_name || '') : '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email"
+           value="<%= typeof supplier !== 'undefined' && supplier ? (supplier.email || '') : '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="phone">Phone</label>
+    <input type="tel" id="phone" name="phone"
+           value="<%= typeof supplier !== 'undefined' && supplier ? (supplier.phone || '') : '' %>">
+  </div>
+
+  <div class="form-group">
+    <label for="address">Address</label>
+    <textarea id="address" name="address" rows="2"><%= typeof supplier !== 'undefined' && supplier ? (supplier.address || '') : '' %></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" rows="3"><%= typeof supplier !== 'undefined' && supplier ? (supplier.notes || '') : '' %></textarea>
+  </div>
+
+  <div class="form-actions">
+    <a href="/suppliers" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-primary"><%= typeof supplier !== 'undefined' && supplier ? 'Update' : 'Create' %> Supplier</button>
+  </div>
+</form>

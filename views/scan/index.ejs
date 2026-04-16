@@ -1,0 +1,18 @@
+<div class="scanner-container">
+  <h1>Scan Card</h1>
+
+  <div id="scanner-region"></div>
+
+  <div id="scan-result" style="display:none;"></div>
+
+  <div class="manual-scan">
+    <h3>Manual Entry</h3>
+    <div class="form-row">
+      <input type="text" id="manual-uid" placeholder="Enter card UID..." required>
+      <button type="button" class="btn btn-primary" onclick="submitManualUid()">Scan</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="/js/scanner.js"></script>

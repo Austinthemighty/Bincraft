@@ -1,0 +1,48 @@
+<div class="page-header">
+  <h1>Suppliers</h1>
+  <div class="page-actions">
+    <a href="/suppliers/new" class="btn btn-primary">+ New Supplier</a>
+  </div>
+</div>
+
+<div class="filter-row">
+  <form method="get" action="/suppliers" class="search-bar">
+    <input type="search" name="search" placeholder="Search suppliers..." value="<%= search %>" aria-label="Search">
+    <button type="submit" class="btn btn-secondary">Search</button>
+  </form>
+</div>
+
+<% if (suppliers.length === 0) { %>
+  <div class="empty-state">
+    <p>No suppliers found.</p>
+    <a href="/suppliers/new" class="btn btn-primary">Create one</a>
+  </div>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Contact</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% suppliers.forEach(supplier => { %>
+      <tr>
+        <td><a href="/suppliers/<%= supplier.id %>"><%= supplier.name %></a></td>
+        <td><%= supplier.contact_name || '-' %></td>
+        <td><% if (supplier.email) { %><a href="mailto:<%= supplier.email %>"><%= supplier.email %></a><% } else { %>-<% } %></td>
+        <td><%= supplier.phone || '-' %></td>
+        <td>
+          <a href="/suppliers/<%= supplier.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
+          <form method="POST" action="/suppliers/<%= supplier.id %>?_method=DELETE" class="inline-form">
+            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this supplier?">Delete</button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>

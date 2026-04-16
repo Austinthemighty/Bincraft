@@ -1,0 +1,123 @@
+<ul class="breadcrumbs">
+  <li><a href="/orders">Orders</a></li>
+  <li><%= order.order_number %></li>
+</ul>
+
+<div class="page-header">
+  <h1><%= order.order_number %></h1>
+  <div class="page-actions">
+    <% if (order.status === 'pending') { %>
+      <form method="POST" action="/orders/<%= order.id %>/submit" style="display:inline">
+        <button type="submit" class="btn btn-primary">Submit to Supplier</button>
+      </form>
+    <% } %>
+    <% if (['submitted', 'confirmed', 'shipped'].includes(order.status)) { %>
+      <a href="/receiving/<%= order.id %>" class="btn btn-secondary">Receive</a>
+    <% } %>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel-header">Order Information</div>
+    <dl>
+      <dt>Supplier</dt>
+      <dd><a href="/suppliers/<%= order.supplier_id %>"><%= order.supplier_name %></a></dd>
+      <dt>Status</dt>
+      <dd><span class="badge badge-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></dd>
+      <dt>Created</dt>
+      <dd><%= new Date(order.created_at).toLocaleString() %></dd>
+      <% if (order.submitted_at) { %>
+      <dt>Submitted</dt>
+      <dd><%= new Date(order.submitted_at).toLocaleString() %></dd>
+      <% } %>
+      <% if (order.expected_delivery_date) { %>
+      <dt>Expected Delivery</dt>
+      <dd><%= new Date(order.expected_delivery_date).toLocaleDateString() %></dd>
+      <% } %>
+      <% if (order.received_at) { %>
+      <dt>Received</dt>
+      <dd><%= new Date(order.received_at).toLocaleString() %></dd>
+      <% } %>
+      <dt>Total</dt>
+      <dd>$<%= parseFloat(order.total_cost || 0).toFixed(2) %></dd>
+    </dl>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Status Progression</div>
+    <div class="status-progress">
+      <% const statuses = ['pending', 'submitted', 'confirmed', 'shipped', 'received']; %>
+      <% const currentIdx = statuses.indexOf(order.status); %>
+      <% statuses.forEach((s, i) => { %>
+        <div class="status-step <%= i <= currentIdx ? 'active' : '' %> <%= i === currentIdx ? 'current' : '' %>">
+          <div class="status-dot"></div>
+          <span><%= s.charAt(0).toUpperCase() + s.slice(1) %></span>
+        </div>
+      <% }) %>
+    </div>
+
+    <% if (order.status !== 'received' && order.status !== 'cancelled') { %>
+    <form method="POST" action="/orders/<%= order.id %>?_method=PUT" style="margin-top:1rem">
+      <div class="form-row">
+        <select name="status">
+          <option value="">Change status...</option>
+          <% if (order.status === 'pending') { %><option value="submitted">Submitted</option><% } %>
+          <% if (order.status === 'submitted') { %><option value="confirmed">Confirmed</option><% } %>
+          <% if (order.status === 'confirmed') { %><option value="shipped">Shipped</option><% } %>
+          <% if (order.status === 'shipped') { %><option value="received">Received</option><% } %>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button type="submit" class="btn btn-secondary">Update Status</button>
+      </div>
+    </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h3>Line Items</h3>
+  </div>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Part #</th>
+        <th>Item</th>
+        <th class="col-number">Qty Ordered</th>
+        <th class="col-number">Qty Received</th>
+        <th class="col-number">Unit Cost</th>
+        <th class="col-number">Line Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% let grandTotal = 0; %>
+      <% lines.forEach(line => { %>
+        <% const lineTotal = line.quantity * (line.unit_cost || 0); grandTotal += lineTotal; %>
+      <tr>
+        <td><code><%= line.part_number %></code></td>
+        <td><a href="/items/<%= line.item_id %>"><%= line.item_name %></a></td>
+        <td class="col-number"><%= line.quantity %></td>
+        <td class="col-number"><%= line.received_quantity || 0 %></td>
+        <td class="col-number">$<%= parseFloat(line.unit_cost || 0).toFixed(2) %></td>
+        <td class="col-number">$<%= lineTotal.toFixed(2) %></td>
+      </tr>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5"><strong>Total</strong></td>
+        <td class="col-number"><strong>$<%= grandTotal.toFixed(2) %></strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<% if (order.notes) { %>
+<div class="section">
+  <div class="section-header">
+    <h3>Notes</h3>
+  </div>
+  <p><%= order.notes %></p>
+</div>
+<% } %>

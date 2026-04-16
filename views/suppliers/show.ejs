@@ -1,0 +1,52 @@
+<ul class="breadcrumbs">
+  <li><a href="/suppliers">Suppliers</a></li>
+  <li><%= supplier.name %></li>
+</ul>
+
+<div class="page-header">
+  <h1><%= supplier.name %></h1>
+  <div class="page-actions">
+    <a href="/suppliers/<%= supplier.id %>/edit" class="btn btn-secondary">Edit</a>
+    <form method="POST" action="/suppliers/<%= supplier.id %>?_method=DELETE" class="inline-form">
+      <button type="submit" class="btn btn-danger" data-confirm="Delete this supplier?">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel-header">Contact Information</div>
+    <dl>
+      <dt>Contact</dt>
+      <dd><%= supplier.contact_name || 'Not set' %></dd>
+      <dt>Email</dt>
+      <dd><% if (supplier.email) { %><a href="mailto:<%= supplier.email %>"><%= supplier.email %></a><% } else { %>Not set<% } %></dd>
+      <dt>Phone</dt>
+      <dd><%= supplier.phone || 'Not set' %></dd>
+      <dt>Address</dt>
+      <dd><%= supplier.address || 'Not set' %></dd>
+      <dt>Notes</dt>
+      <dd><%= supplier.notes || 'None' %></dd>
+    </dl>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Performance Stats</div>
+    <% if (stats) { %>
+    <dl>
+      <dt>Total Orders</dt>
+      <dd><%= stats.total_orders || 0 %></dd>
+      <dt>Received</dt>
+      <dd><%= stats.received_orders || 0 %></dd>
+      <dt>On-Time %</dt>
+      <dd><%= stats.on_time_percentage != null ? stats.on_time_percentage + '%' : 'N/A' %></dd>
+      <dt>Avg Lead Time</dt>
+      <dd><%= stats.avg_lead_time_days != null ? stats.avg_lead_time_days + ' days' : 'N/A' %></dd>
+    </dl>
+    <% } else { %>
+    <div class="empty-state">
+      <p>No order data available yet.</p>
+    </div>
+    <% } %>
+  </div>
+</div>

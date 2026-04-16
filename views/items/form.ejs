@@ -1,0 +1,119 @@
+<ul class="breadcrumbs">
+  <li><a href="/items">Items</a></li>
+  <li><%= typeof item !== 'undefined' && item ? 'Edit' : 'New' %> Item</li>
+</ul>
+
+<h1><%= typeof item !== 'undefined' && item ? `Edit ${item.name}` : 'New Item' %></h1>
+
+<form method="POST"
+      action="<%= typeof item !== 'undefined' && item ? `/items/${item.id}?_method=PUT` : '/items' %>">
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="part_number">Part Number *</label>
+      <input type="text" id="part_number" name="part_number" required
+             value="<%= typeof item !== 'undefined' && item ? item.part_number : '' %>">
+    </div>
+    <div class="form-group">
+      <label for="name">Name *</label>
+      <input type="text" id="name" name="name" required
+             value="<%= typeof item !== 'undefined' && item ? item.name : '' %>">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description</label>
+    <textarea id="description" name="description" rows="2"><%= typeof item !== 'undefined' && item ? (item.description || '') : '' %></textarea>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="supplier_id">Supplier</label>
+      <select id="supplier_id" name="supplier_id">
+        <option value="">No supplier</option>
+        <% suppliers.forEach(s => { %>
+        <option value="<%= s.id %>" <%= typeof item !== 'undefined' && item && item.supplier_id == s.id ? 'selected' : '' %>><%= s.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="location_id">Storage Location</label>
+      <select id="location_id" name="location_id">
+        <option value="">No location</option>
+        <% locations.forEach(l => { %>
+        <option value="<%= l.id %>" <%= typeof item !== 'undefined' && item && item.location_id == l.id ? 'selected' : '' %>><%= l.name %> (<%= l.type %>)</option>
+        <% }) %>
+      </select>
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="cost_per_unit">Cost Per Unit ($)</label>
+      <input type="number" id="cost_per_unit" name="cost_per_unit" step="0.01" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.cost_per_unit || 0) : '0' %>">
+    </div>
+    <div class="form-group">
+      <label for="unit_of_measure">Unit of Measure</label>
+      <input type="text" id="unit_of_measure" name="unit_of_measure"
+             value="<%= typeof item !== 'undefined' && item ? (item.unit_of_measure || '') : '' %>"
+             placeholder="e.g. each, box, kg">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="reorder_point">Reorder Point</label>
+      <input type="number" id="reorder_point" name="reorder_point" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.reorder_point || 0) : '0' %>">
+    </div>
+    <div class="form-group">
+      <label for="reorder_quantity">Reorder Quantity</label>
+      <input type="number" id="reorder_quantity" name="reorder_quantity" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.reorder_quantity || 0) : '0' %>">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="container_quantity">Container Quantity</label>
+      <input type="number" id="container_quantity" name="container_quantity" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.container_quantity || 0) : '0' %>">
+    </div>
+    <div class="form-group">
+      <label for="lead_time_days">Lead Time (days)</label>
+      <input type="number" id="lead_time_days" name="lead_time_days" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.lead_time_days || 0) : '0' %>">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="safety_factor">Safety Factor</label>
+      <input type="number" id="safety_factor" name="safety_factor" step="0.1" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.safety_factor || 1) : '1' %>">
+    </div>
+    <div class="form-group">
+      <label for="current_stock">Current Stock</label>
+      <input type="number" id="current_stock" name="current_stock" min="0"
+             value="<%= typeof item !== 'undefined' && item ? (item.current_stock || 0) : '0' %>">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="label_color">Label Color</label>
+      <div style="display:flex;gap:var(--space-sm);align-items:center;">
+        <input type="color" id="label_color" name="label_color"
+               value="<%= typeof item !== 'undefined' && item ? (item.label_color || '#ffffff') : '#ffffff' %>"
+               style="width:48px;height:36px;padding:2px;cursor:pointer;border-radius:var(--radius-sm);">
+        <span style="font-size:var(--text-xs);color:var(--text-tertiary);">Used for item name on printed labels</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="/items" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-primary"><%= typeof item !== 'undefined' && item ? 'Update' : 'Create' %> Item</button>
+  </div>
+</form>

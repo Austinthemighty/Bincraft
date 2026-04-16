@@ -1,0 +1,15 @@
+<% if (typeof user === 'undefined' || !user) { %>
+<div class="auth-layout">
+  <div class="empty-state">
+    <h1><%= typeof title !== 'undefined' ? title : 'Error' %></h1>
+    <p><%= typeof message !== 'undefined' ? message : 'Something went wrong' %></p>
+    <a href="/auth/login" class="btn btn-primary">Go to Sign In</a>
+  </div>
+</div>
+<% } else { %>
+<div class="empty-state">
+  <h1><%= typeof title !== 'undefined' ? title : 'Error' %></h1>
+  <p><%= typeof message !== 'undefined' ? message : 'Something went wrong' %></p>
+  <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+</div>
+<% } %>

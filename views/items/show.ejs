@@ -1,0 +1,136 @@
+<ul class="breadcrumbs">
+  <li><a href="/items">Items</a></li>
+  <li><%= item.name %></li>
+</ul>
+
+<div class="page-header">
+  <h1><%= item.name %></h1>
+  <div class="page-actions">
+    <a href="/items/<%= item.id %>/edit" class="btn btn-secondary">Edit</a>
+    <form method="POST" action="/items/<%= item.id %>?_method=DELETE" class="inline-form">
+      <button type="submit" class="btn btn-danger" data-confirm="Deactivate this item?">Deactivate</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel-header">Item Details</div>
+    <dl>
+      <dt>Part Number</dt>
+      <dd><code><%= item.part_number %></code></dd>
+      <dt>Description</dt>
+      <dd><%= item.description || 'No description' %></dd>
+      <dt>Supplier</dt>
+      <dd><% if (item.supplier_name) { %><a href="/suppliers/<%= item.supplier_id %>"><%= item.supplier_name %></a><% } else { %>None<% } %></dd>
+      <dt>Location</dt>
+      <dd><%= item.location_name || 'Not assigned' %></dd>
+      <dt>Unit of Measure</dt>
+      <dd><%= item.unit_of_measure || 'N/A' %></dd>
+      <dt>Cost</dt>
+      <dd>$<%= parseFloat(item.cost_per_unit || 0).toFixed(2) %></dd>
+      <dt>Reorder Point</dt>
+      <dd><%= item.reorder_point %></dd>
+      <dt>Reorder Quantity</dt>
+      <dd><%= item.reorder_quantity %></dd>
+      <dt>Container Qty</dt>
+      <dd><%= item.container_quantity || 'N/A' %></dd>
+      <dt>Lead Time</dt>
+      <dd><%= item.lead_time_days != null ? item.lead_time_days + ' days' : 'N/A' %></dd>
+      <dt>Safety Factor</dt>
+      <dd><%= item.safety_factor != null ? item.safety_factor : 'N/A' %></dd>
+      <dt>Current Stock</dt>
+      <dd>
+        <% if (item.current_stock <= 0) { %>
+          <span class="stock-out"><%= item.current_stock %></span>
+        <% } else if (item.current_stock <= item.reorder_point) { %>
+          <span class="stock-low"><%= item.current_stock %></span>
+        <% } else { %>
+          <span class="stock-ok"><%= item.current_stock %></span>
+        <% } %>
+      </dd>
+    </dl>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Generate Cards</div>
+    <form method="POST" action="/cards">
+      <input type="hidden" name="item_id" value="<%= item.id %>">
+      <div class="form-group">
+        <label for="quantity">Number of Cards</label>
+        <input type="number" id="quantity" name="quantity" value="1" min="1" max="100">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">+ Generate Cards</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Cards (<%= cards.length %>)</h2>
+  </div>
+
+  <% if (cards.length === 0) { %>
+    <div class="empty-state">
+      <p>No cards generated for this item yet.</p>
+    </div>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Card UID</th>
+          <th>Loop #</th>
+          <th>Status</th>
+          <th>Location</th>
+          <th>Last Scanned</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% cards.forEach(card => { %>
+        <tr>
+          <td><a href="/cards/<%= card.id %>"><code><%= card.card_uid %></code></a></td>
+          <td><%= card.loop_count || 0 %></td>
+          <td><span class="badge badge-<%= card.status %>"><%= card.status %></span></td>
+          <td><%= card.location_name || '-' %></td>
+          <td><%= card.last_scanned ? new Date(card.last_scanned).toLocaleDateString() : '-' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Recent Scan History</h2>
+  </div>
+
+  <% if (scanHistory.length === 0) { %>
+    <div class="empty-state">
+      <p>No scans recorded yet.</p>
+    </div>
+  <% } else { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Card</th>
+          <th>Scanned By</th>
+          <th>Status at Scan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% scanHistory.forEach(scan => { %>
+        <tr>
+          <td><%= new Date(scan.scanned_at).toLocaleString() %></td>
+          <td><code><%= scan.card_uid || '-' %></code></td>
+          <td><%= scan.scanned_by_name || 'Unknown' %></td>
+          <td><span class="badge badge-<%= scan.status_at_scan %>"><%= scan.status_at_scan %></span></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

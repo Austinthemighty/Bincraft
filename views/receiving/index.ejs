@@ -1,0 +1,48 @@
+<div class="page-header">
+  <h1>Receiving</h1>
+</div>
+
+<% if (orders.length === 0) { %>
+  <div class="empty-state">
+    <p>No orders pending receipt. Check the <a href="/orders">orders page</a>.</p>
+  </div>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Order #</th>
+        <th>Supplier</th>
+        <th>Status</th>
+        <th>Expected Delivery</th>
+        <th class="col-number">Line Count</th>
+        <th class="col-actions">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% orders.forEach(order => { %>
+      <tr>
+        <td><a href="/orders/<%= order.id %>"><%= order.order_number || `#${order.id}` %></a></td>
+        <td><%= order.supplier_name %></td>
+        <td><span class="badge badge-<%= order.status %>"><%= order.status.replace(/_/g, ' ') %></span></td>
+        <td>
+          <% if (order.expected_delivery) { %>
+            <%= new Date(order.expected_delivery).toLocaleDateString() %>
+            <% const daysUntil = Math.ceil((new Date(order.expected_delivery) - new Date()) / 86400000); %>
+            <% if (daysUntil < 0) { %>
+              <span class="badge badge-cancelled">Overdue</span>
+            <% } else if (daysUntil <= 2) { %>
+              <span class="badge badge-pending">Soon</span>
+            <% } %>
+          <% } else { %>
+            -
+          <% } %>
+        </td>
+        <td class="col-number"><%= order.line_count %></td>
+        <td class="col-actions">
+          <a href="/receiving/<%= order.id %>" class="btn btn-primary btn-sm">Receive</a>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+<% } %>

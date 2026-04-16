@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print Cards - ItemCards</title>
+  <style>
+    /* ====== Avery Label Format Definitions ====== */
+    :root {
+      /* Avery 5160 / 8160 — 1" x 2.625", 30/sheet, 3 cols x 10 rows */
+      --f-5160-w: 2.625in; --f-5160-h: 1in;
+      --f-5160-cols: 3; --f-5160-rows: 10;
+      --f-5160-mt: 0.5in; --f-5160-ml: 0.1875in;
+      --f-5160-gx: 0.125in; --f-5160-gy: 0in;
+
+      /* Avery 5163 / 8163 — 2" x 4", 10/sheet, 2 cols x 5 rows */
+      --f-5163-w: 4in; --f-5163-h: 2in;
+      --f-5163-cols: 2; --f-5163-rows: 5;
+      --f-5163-mt: 0.5in; --f-5163-ml: 0.15625in;
+      --f-5163-gx: 0.1875in; --f-5163-gy: 0in;
+
+      /* Avery 5164 / 8164 — 3.333" x 4", 6/sheet, 2 cols x 3 rows */
+      --f-5164-w: 4in; --f-5164-h: 3.333in;
+      --f-5164-cols: 2; --f-5164-rows: 3;
+      --f-5164-mt: 0.5in; --f-5164-ml: 0.15625in;
+      --f-5164-gx: 0.1875in; --f-5164-gy: 0in;
+
+      /* Avery 5167 — 0.5" x 1.75", 80/sheet, 4 cols x 20 rows */
+      --f-5167-w: 1.75in; --f-5167-h: 0.5in;
+      --f-5167-cols: 4; --f-5167-rows: 20;
+      --f-5167-mt: 0.5in; --f-5167-ml: 0.3125in;
+      --f-5167-gx: 0.3125in; --f-5167-gy: 0in;
+
+      /* Avery 5195 — 0.666" x 1.75", 60/sheet, 4 cols x 15 rows */
+      --f-5195-w: 1.75in; --f-5195-h: 0.666in;
+      --f-5195-cols: 4; --f-5195-rows: 15;
+      --f-5195-mt: 0.5in; --f-5195-ml: 0.3125in;
+      --f-5195-gx: 0.3125in; --f-5195-gy: 0in;
+
+      /* Avery 5168 — 3.5" x 5", 4/sheet, 2 cols x 2 rows */
+      --f-5168-w: 3.5in; --f-5168-h: 5in;
+      --f-5168-cols: 2; --f-5168-rows: 2;
+      --f-5168-mt: 0in; --f-5168-ml: 0.5in;
+      --f-5168-gx: 0in; --f-5168-gy: 0in;
+
+      /* Avery 6572 — 1.25" x 1.75", 32/sheet, 4 cols x 8 rows */
+      --f-6572-w: 1.75in; --f-6572-h: 1.25in;
+      --f-6572-cols: 4; --f-6572-rows: 8;
+      --f-6572-mt: 0.375in; --f-6572-ml: 0.25in;
+      --f-6572-gx: 0.25in; --f-6572-gy: 0in;
+    }
+
+    /* ====== Screen UI ====== */
+    @media screen {
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #111;
+        color: #eee;
+        padding: 1rem;
+        font-size: 14px;
+      }
+      .print-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-end;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #333;
+      }
+      .toolbar-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .toolbar-group label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #888;
+      }
+      .toolbar-group select, .toolbar-group button {
+        padding: 0.5rem 1rem;
+        font-size: 14px;
+        border-radius: 6px;
+        border: 1px solid #444;
+        background: #222;
+        color: #eee;
+        cursor: pointer;
+      }
+      .toolbar-group select:focus { border-color: #4a9eff; outline: none; }
+      .toolbar-group button:hover { background: #333; }
+      .toolbar-group .btn-print {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: white;
+        font-weight: 600;
+      }
+      .toolbar-group .btn-print:hover { background: #1d4ed8; }
+      .toolbar-info {
+        font-size: 12px;
+        color: #666;
+        margin-left: auto;
+      }
+
+      /* Screen preview of labels */
+      .label-sheet {
+        background: white;
+        width: 8.5in;
+        min-height: 11in;
+        margin: 0 auto;
+        padding: 0;
+        position: relative;
+        color: black;
+      }
+      .label-grid {
+        display: grid;
+        position: absolute;
+      }
+      .label-cell {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border: 1px dashed #ccc;
+      }
+      .label-cell .qr { line-height: 0; }
+      .label-cell .qr img { display: block; }
+      .label-cell .part-number {
+        font-weight: bold;
+        font-family: monospace;
+        line-height: 1.2;
+      }
+      .label-cell .item-name {
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+      .label-cell .meta {
+        color: #666;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+      .label-cell .card-uid {
+        font-family: monospace;
+        color: #999;
+        line-height: 1.2;
+      }
+    }
+
+    /* ====== Print ====== */
+    @media print {
+      body { background: white; color: black; padding: 0; margin: 0; }
+      .print-toolbar { display: none !important; }
+      .label-sheet {
+        width: 8.5in;
+        height: 11in;
+        page-break-after: always;
+        position: relative;
+      }
+      .label-sheet:last-child { page-break-after: auto; }
+      .label-cell {
+        border: none !important;
+        overflow: hidden;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-toolbar">
+  <div class="toolbar-group">
+    <label>Label Format</label>
+    <select id="format-select">
+      <option value="5160" <%= format === '5160' ? 'selected' : '' %>>Avery 5160 — 1" × 2⅝" (30/sheet)</option>
+      <option value="5163" <%= format === '5163' ? 'selected' : '' %>>Avery 5163 — 2" × 4" (10/sheet)</option>
+      <option value="5164" <%= format === '5164' ? 'selected' : '' %>>Avery 5164 — 3⅓" × 4" (6/sheet)</option>
+      <option value="5167" <%= format === '5167' ? 'selected' : '' %>>Avery 5167 — ½" × 1¾" (80/sheet)</option>
+      <option value="5195" <%= format === '5195' ? 'selected' : '' %>>Avery 5195 — ⅔" × 1¾" (60/sheet)</option>
+      <option value="5168" <%= format === '5168' ? 'selected' : '' %>>Avery 5168 — 3½" × 5" (4/sheet)</option>
+      <option value="6572" <%= format === '6572' ? 'selected' : '' %>>Avery 6572 — 1¼" × 1¾" (32/sheet)</option>
+      <option value="custom" <%= format === 'custom' ? 'selected' : '' %>>Custom (no grid)</option>
+    </select>
+  </div>
+  <div class="toolbar-group">
+    <label>&nbsp;</label>
+    <button class="btn-print" onclick="window.print()">Print</button>
+  </div>
+  <div class="toolbar-group">
+    <label>&nbsp;</label>
+    <button onclick="window.close()">Close</button>
+  </div>
+  <div class="toolbar-info">
+    <%= cards.length %> card(s)
+  </div>
+</div>
+
+<div id="print-area"></div>
+
+<script>
+const CARDS = <%- JSON.stringify(cards.map(c => ({
+  qr: c.qr_data_url || c.qrDataUrl,
+  part_number: c.part_number,
+  item_name: c.item_name,
+  supplier_name: c.supplier_name || '',
+  location_name: c.location_name || '',
+  reorder_quantity: c.reorder_quantity || '',
+  loop_number: c.loop_number || 1,
+  card_uid: c.card_uid,
+  item_id: c.item_id,
+  label_color: c.label_color || '#000000',
+}))) %>;
+
+const FORMATS = {
+  '5160': { w: 2.625, h: 1, cols: 3, rows: 10, mt: 0.5, ml: 0.1875, gx: 0.125, gy: 0 },
+  '5163': { w: 4, h: 2, cols: 2, rows: 5, mt: 0.5, ml: 0.15625, gx: 0.1875, gy: 0 },
+  '5164': { w: 4, h: 3.333, cols: 2, rows: 3, mt: 0.5, ml: 0.15625, gx: 0.1875, gy: 0 },
+  '5167': { w: 1.75, h: 0.5, cols: 4, rows: 20, mt: 0.5, ml: 0.3125, gx: 0.3125, gy: 0 },
+  '5195': { w: 1.75, h: 0.666, cols: 4, rows: 15, mt: 0.5, ml: 0.3125, gx: 0.3125, gy: 0 },
+  '5168': { w: 3.5, h: 5, cols: 2, rows: 2, mt: 0, ml: 0.5, gx: 0, gy: 0 },
+  '6572': { w: 1.75, h: 1.25, cols: 4, rows: 8, mt: 0.375, ml: 0.25, gx: 0.25, gy: 0 },
+};
+
+/*
+ * Layout strategy:
+ * - Wide labels (w/h > 1.8): HORIZONTAL — QR left, text right
+ * - Square-ish labels (w/h <= 1.8): VERTICAL — QR top, text below (like 6572)
+ *
+ * Size tiers by area:
+ * - tiny  (< 0.5 sq in):  part# + item name only
+ * - small (< 1.5 sq in):  + location/loop
+ * - medium (< 5 sq in):   + supplier, qty, uid
+ * - large (>= 5 sq in):   everything with generous sizing
+ */
+
+function renderLabels(formatKey) {
+  const area = document.getElementById('print-area');
+  area.innerHTML = '';
+
+  if (formatKey === 'custom') {
+    renderCustom(area);
+    return;
+  }
+
+  const f = FORMATS[formatKey];
+  if (!f) return;
+
+  const perSheet = f.cols * f.rows;
+  const totalSheets = Math.ceil(CARDS.length / perSheet);
+  const sqArea = f.w * f.h;
+  const aspect = f.w / f.h;
+  const horizontal = aspect > 1.8; // Wide labels get side-by-side layout
+
+  // QR size: use the shorter dimension as the constraint
+  const qrInches = horizontal
+    ? Math.min(f.h * 0.85, f.w * 0.35)  // QR fills most of label height
+    : Math.min(f.h * 0.55, f.w * 0.6);  // QR takes top portion
+  const qrSize = Math.max(Math.floor(qrInches * 96), 24);
+
+  // Font sizes scale with area
+  let partSize, nameSize, metaSize, uidSize;
+  if (sqArea < 0.5) {
+    partSize = 8; nameSize = 6.5; metaSize = 0; uidSize = 5;
+  } else if (sqArea < 1.5) {
+    partSize = 9; nameSize = 7.5; metaSize = 6; uidSize = 5.5;
+  } else if (sqArea < 5) {
+    partSize = 11; nameSize = 9; metaSize = 7; uidSize = 6;
+  } else {
+    partSize = 14; nameSize = 11; metaSize = 8; uidSize = 7;
+  }
+
+  const pad = sqArea < 0.5 ? 2 : sqArea < 1.5 ? 3 : 4;
+
+  for (let s = 0; s < totalSheets; s++) {
+    const sheet = document.createElement('div');
+    sheet.className = 'label-sheet';
+
+    const grid = document.createElement('div');
+    grid.className = 'label-grid';
+    grid.style.cssText = `
+      top: ${f.mt}in; left: ${f.ml}in;
+      grid-template-columns: repeat(${f.cols}, ${f.w}in);
+      grid-template-rows: repeat(${f.rows}, ${f.h}in);
+      column-gap: ${f.gx}in; row-gap: ${f.gy}in;
+    `;
+
+    for (let i = 0; i < perSheet; i++) {
+      const idx = s * perSheet + i;
+      const cell = document.createElement('div');
+      cell.className = 'label-cell';
+      cell.style.padding = pad + 'px';
+
+      if (idx < CARDS.length) {
+        const c = CARDS[idx];
+
+        if (horizontal) {
+          // ── HORIZONTAL LAYOUT: QR left, text right ──
+          cell.style.flexDirection = 'row';
+          cell.style.alignItems = 'center';
+          cell.style.justifyContent = 'flex-start';
+          cell.style.gap = '4px';
+          cell.style.textAlign = 'left';
+
+          const textLines = [];
+          textLines.push(`<div class="part-number" style="font-size:${partSize}px;">${c.part_number}</div>`);
+          textLines.push(`<div class="item-name" style="font-size:${nameSize}px;color:${c.label_color};">${c.item_name}</div>`);
+          if (metaSize && sqArea >= 1.5) {
+            const parts = [];
+            if (c.location_name) parts.push(c.location_name);
+            parts.push('#' + c.loop_number);
+            textLines.push(`<div class="meta" style="font-size:${metaSize}px;">${parts.join(' · ')}</div>`);
+          }
+          if (uidSize) {
+            textLines.push(`<div class="card-uid" style="font-size:${uidSize}px;">Item#${c.item_id}</div>`);
+          }
+
+          cell.innerHTML = `
+            <div class="qr" style="flex-shrink:0;"><img src="${c.qr}" width="${qrSize}" height="${qrSize}"></div>
+            <div style="min-width:0;overflow:hidden;">${textLines.join('')}</div>
+          `;
+        } else {
+          // ── VERTICAL LAYOUT: QR top, text below (6572 style) ──
+          let html = '';
+          html += `<div class="qr"><img src="${c.qr}" width="${qrSize}" height="${qrSize}"></div>`;
+          html += `<div class="part-number" style="font-size:${partSize}px;">${c.part_number}</div>`;
+          html += `<div class="item-name" style="font-size:${nameSize}px;color:${c.label_color};">${c.item_name}</div>`;
+
+          if (metaSize && sqArea >= 1.5) {
+            const parts = [];
+            if (c.supplier_name) parts.push(c.supplier_name);
+            if (c.reorder_quantity) parts.push('Qty: ' + c.reorder_quantity);
+            if (c.location_name) parts.push(c.location_name);
+            parts.push('Loop #' + c.loop_number);
+            html += `<div class="meta" style="font-size:${metaSize}px;">${parts.join(' · ')}</div>`;
+          } else if (metaSize) {
+            html += `<div class="meta" style="font-size:${metaSize}px;">${c.location_name || ''} · #${c.loop_number}</div>`;
+          }
+
+          if (uidSize) {
+            html += `<div class="card-uid" style="font-size:${uidSize}px;">ID:${c.card_uid.substring(0,8)} · Item#${c.item_id}</div>`;
+          }
+
+          cell.innerHTML = html;
+        }
+      }
+      grid.appendChild(cell);
+    }
+
+    sheet.appendChild(grid);
+    area.appendChild(sheet);
+  }
+}
+
+function renderCustom(area) {
+  const sheet = document.createElement('div');
+  sheet.className = 'label-sheet';
+  sheet.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.25in;padding:0.5in;align-content:flex-start;';
+
+  CARDS.forEach(c => {
+    const cell = document.createElement('div');
+    cell.style.cssText = 'width:2.5in;text-align:center;padding:0.15in;border:1px solid #ccc;page-break-inside:avoid;';
+    cell.innerHTML = `
+      <div class="qr"><img src="${c.qr}" width="150" height="150"></div>
+      <div class="part-number" style="font-size:12px;margin:4px 0 2px;">${c.part_number}</div>
+      <div class="item-name" style="font-size:10px;color:${c.label_color};">${c.item_name}</div>
+      <div class="meta" style="font-size:7px;color:#666;margin-top:2px;">
+        ${[c.supplier_name, c.reorder_quantity ? 'Qty:' + c.reorder_quantity : '', c.location_name, 'Loop#' + c.loop_number].filter(Boolean).join(' · ')}
+      </div>
+      <div class="card-uid" style="font-family:monospace;font-size:6px;color:#999;margin-top:2px;">ID:${c.card_uid} · Item#${c.item_id}</div>
+    `;
+    sheet.appendChild(cell);
+  });
+
+  area.appendChild(sheet);
+}
+
+// Format switcher
+document.getElementById('format-select').addEventListener('change', function() {
+  renderLabels(this.value);
+  // Update URL without reload
+  const url = new URL(window.location);
+  url.searchParams.set('format', this.value);
+  history.replaceState(null, '', url);
+});
+
+// Initial render
+renderLabels('<%= format %>');
+</script>
+
+</body>
+</html>

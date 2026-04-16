@@ -1,0 +1,52 @@
+/* Print styles for Kanban cards */
+@media print {
+  nav, .flash, .page-header button, .page-header a,
+  .no-print, footer {
+    display: none !important;
+  }
+
+  main.container {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .print-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5in;
+    padding: 0.25in;
+  }
+
+  .print-card {
+    border: 2px solid #000;
+    border-radius: 4px;
+    padding: 0.3in;
+    page-break-inside: avoid;
+    text-align: center;
+    height: 3in;
+    width: 4in;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .print-card .qr-code img {
+    width: 1.5in;
+    height: 1.5in;
+  }
+
+  .print-card .part-number {
+    font-size: 16pt;
+    font-weight: bold;
+  }
+
+  .print-card .item-name {
+    font-size: 10pt;
+  }
+
+  .print-card .card-info {
+    font-size: 8pt;
+    display: flex;
+    justify-content: space-between;
+  }
+}

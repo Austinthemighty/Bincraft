@@ -1,0 +1,53 @@
+<div class="page-header">
+  <h1>Cards</h1>
+  <div class="page-actions">
+    <a href="/cards/print?ids=<%= cards.map(c => c.id).join(',') %>" class="btn btn-secondary" target="_blank">Print All</a>
+  </div>
+</div>
+
+<form method="get" action="/cards">
+  <div class="filter-row">
+    <select name="status">
+      <option value="">All Statuses</option>
+      <option value="at_location" <%= filters.status === 'at_location' ? 'selected' : '' %>>At Location</option>
+      <option value="in_queue" <%= filters.status === 'in_queue' ? 'selected' : '' %>>In Queue</option>
+      <option value="ordered" <%= filters.status === 'ordered' ? 'selected' : '' %>>Ordered</option>
+      <option value="in_transit" <%= filters.status === 'in_transit' ? 'selected' : '' %>>In Transit</option>
+      <option value="received" <%= filters.status === 'received' ? 'selected' : '' %>>Received</option>
+    </select>
+    <input type="text" name="item_id" placeholder="Item ID" value="<%= filters.item_id || '' %>">
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+</form>
+
+<% if (cards.length === 0) { %>
+  <div class="empty-state">
+    <p>No cards found. Generate cards from an <a href="/items">item's detail page</a>.</p>
+  </div>
+<% } else { %>
+  <div class="cards-grid">
+    <% cards.forEach(card => { %>
+    <div class="kanban-card">
+      <a href="/cards/<%= card.id %>">
+        <img src="<%= card.qr_data_url || `/cards/${card.id}/qr` %>" alt="QR Code" loading="lazy" width="80" height="80">
+      </a>
+      <div class="card-part-number"><%= card.part_number %></div>
+      <div class="card-item-name"><%= card.item_name %></div>
+      <div class="card-id-fallback"><%= (card.card_uid || '').substring(0, 8) %>...</div>
+      <div class="card-footer">
+        <span class="badge badge-<%= card.status %>"><%= (card.status || '').replace(/_/g, ' ') %></span>
+        <a href="/cards/<%= card.id %>" class="btn btn-ghost btn-sm">Details</a>
+      </div>
+    </div>
+    <% }) %>
+  </div>
+
+  <% if (typeof pagination !== 'undefined' && pagination && pagination.totalPages > 1) { %>
+  <div class="pagination">
+    <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+      <a href="?page=<%= i %>&status=<%= filters.status || '' %>&item_id=<%= filters.item_id || '' %>"
+         class="btn btn-sm <%= i === pagination.currentPage ? 'btn-primary' : 'btn-ghost' %>"><%= i %></a>
+    <% } %>
+  </div>
+  <% } %>
+<% } %>

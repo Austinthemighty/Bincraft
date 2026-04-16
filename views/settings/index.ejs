@@ -1,0 +1,140 @@
+<div class="page-header">
+  <h1>Settings</h1>
+</div>
+
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel-header">App URL</div>
+    <p class="text-muted mb-md" style="font-size:var(--text-sm)">
+      Base URL used for QR code generation. Update this if your app moves to a new domain.
+    </p>
+    <form method="POST" action="/settings/app-url">
+      <div class="form-group">
+        <label for="app_url">Base URL</label>
+        <input type="url" id="app_url" name="app_url"
+               value="<%= settings.app_url || 'http://localhost:3000' %>"
+               placeholder="https://your-domain.com" required>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save URL</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">QR Code Management</div>
+    <p class="text-muted mb-md" style="font-size:var(--text-sm)">
+      Regenerate all QR codes using the current App URL. Each card also displays
+      the item ID as a fallback identifier below the QR code.
+    </p>
+    <form method="POST" action="/settings/regenerate-qr">
+      <div class="form-actions">
+        <button type="submit" class="btn btn-secondary" data-confirm="Regenerate QR codes for all cards? This may take a moment.">
+          Regenerate All QR Codes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="section" style="margin-top:var(--space-2xl)">
+  <div class="section-header">
+    <h2>Your Account</h2>
+  </div>
+  <div class="panel">
+    <dl>
+      <dt>Name</dt>
+      <dd><%= currentUser.name || 'Not set' %></dd>
+      <dt>Email</dt>
+      <dd><%= currentUser.email %></dd>
+      <dt>Role</dt>
+      <dd><%= currentUser.role || 'user' %></dd>
+    </dl>
+    <div style="margin-top:var(--space-xl)">
+      <button onclick="logout()" class="btn btn-danger">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:var(--space-2xl)">
+  <div class="section-header">
+    <h2>User Management</h2>
+  </div>
+
+  <% if (users && users.length > 0) { %>
+  <table class="data-table mb-lg">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Created</th>
+        <% if (currentUser.role === 'admin') { %>
+        <th class="col-actions">Actions</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <% users.forEach(u => { %>
+      <tr>
+        <td><%= u.name %></td>
+        <td><%= u.email %></td>
+        <td><span class="badge badge-<%= u.role === 'admin' ? 'submitted' : u.role === 'viewer' ? 'in_queue' : 'at_location' %>"><%= u.role || 'user' %></span></td>
+        <td><%= new Date(u.createdAt).toLocaleDateString() %></td>
+        <% if (currentUser.role === 'admin') { %>
+        <td class="col-actions">
+          <% if (u.id !== currentUser.id) { %>
+          <form method="POST" action="/settings/users/<%= u.id %>/role" class="inline-form flex-gap">
+            <select name="role" style="width:auto;min-width:80px;">
+              <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>Admin</option>
+              <option value="user" <%= u.role === 'user' || !u.role ? 'selected' : '' %>>User</option>
+              <option value="viewer" <%= u.role === 'viewer' ? 'selected' : '' %>>Viewer</option>
+            </select>
+            <button type="submit" class="btn btn-ghost btn-sm">Update</button>
+          </form>
+          <% } else { %>
+          <span class="text-muted" style="font-size:var(--text-xs)">You</span>
+          <% } %>
+        </td>
+        <% } %>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+
+  <% if (currentUser.role === 'admin') { %>
+  <div class="panel">
+    <div class="panel-header">Create New User</div>
+    <form method="POST" action="/settings/users">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="new-name">Name</label>
+          <input type="text" id="new-name" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="new-email">Email</label>
+          <input type="email" id="new-email" name="email" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="new-password">Password</label>
+          <input type="password" id="new-password" name="password" required minlength="8">
+        </div>
+        <div class="form-group">
+          <label for="new-role">Role</label>
+          <select id="new-role" name="role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create Account</button>
+      </div>
+    </form>
+  </div>
+  <% } %>
+</div>

@@ -1,0 +1,62 @@
+<ul class="breadcrumbs">
+  <li><a href="/receiving">Receiving</a></li>
+  <li><%= order.order_number %></li>
+</ul>
+
+<div class="page-header">
+  <h1>Receive <%= order.order_number %></h1>
+</div>
+<p>Supplier: <strong><%= order.supplier_name %></strong></p>
+
+<form method="POST" action="/receiving/<%= order.id %>">
+  <div class="section">
+    <div class="section-header">
+      <h3>Line Items</h3>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Part #</th>
+          <th>Item</th>
+          <th class="col-number">Ordered</th>
+          <th class="col-number">Already Received</th>
+          <th class="col-number">Receiving Now</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% lines.forEach(line => { %>
+        <% const alreadyReceived = line.received_so_far || 0; %>
+        <% const remaining = line.quantity - alreadyReceived; %>
+        <tr>
+          <td><code><%= line.part_number %></code></td>
+          <td><%= line.item_name %></td>
+          <td class="col-number"><%= line.quantity %></td>
+          <td class="col-number"><%= alreadyReceived %></td>
+          <td class="col-number">
+            <input type="number"
+                   name="lines[<%= line.id %>][received_quantity]"
+                   min="0"
+                   max="<%= remaining %>"
+                   value="<%= remaining %>"
+                   style="width:80px">
+          </td>
+          <td>
+            <select name="lines[<%= line.id %>][location_id]">
+              <option value="">Default</option>
+              <% locations.forEach(loc => { %>
+              <option value="<%= loc.id %>"><%= loc.name %> (<%= loc.type %>)</option>
+              <% }) %>
+            </select>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="form-actions">
+    <a href="/receiving" class="btn btn-ghost">Cancel</a>
+    <button type="submit" class="btn btn-primary">Process Receipt</button>
+  </div>
+</form>

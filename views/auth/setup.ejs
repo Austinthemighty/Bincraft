@@ -1,0 +1,76 @@
+<div class="auth-layout">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+      </div>
+      <span>ItemCards</span>
+    </div>
+    <h1>Welcome</h1>
+    <p class="auth-subtitle">Create your admin account to get started.</p>
+    <div id="auth-error" class="flash flash-error" style="display:none"></div>
+    <form id="setup-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required minlength="8">
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn btn-primary" style="width:100%">Create Admin Account</button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('setup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const errEl = document.getElementById('auth-error');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      // Set the first user as admin
+      await fetch('/api/setup-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ userId: data.user.id }),
+      });
+      window.location.href = '/dashboard';
+    } else {
+      errEl.textContent = data.message || 'Failed to create account.';
+      errEl.style.display = 'block';
+    }
+  } catch (err) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+</script>

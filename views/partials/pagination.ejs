@@ -1,0 +1,19 @@
+<% if (typeof pagination !== 'undefined' && pagination && pagination.totalPages > 1) { %>
+<nav class="pagination">
+  <ul>
+    <li>
+      <a href="?page=<%= Math.max(1, pagination.page - 1) %>"
+         class="<%= pagination.page <= 1 ? 'disabled' : '' %>">&laquo; Prev</a>
+    </li>
+    <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+    <li>
+      <a href="?page=<%= i %>" class="<%= i === pagination.page ? 'active' : '' %>"><%= i %></a>
+    </li>
+    <% } %>
+    <li>
+      <a href="?page=<%= Math.min(pagination.totalPages, pagination.page + 1) %>"
+         class="<%= pagination.page >= pagination.totalPages ? 'disabled' : '' %>">Next &raquo;</a>
+    </li>
+  </ul>
+</nav>
+<% } %>

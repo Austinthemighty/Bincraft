@@ -1,0 +1,55 @@
+<ul class="breadcrumbs">
+  <li><a href="/locations">Locations</a></li>
+  <li><%= typeof location !== 'undefined' && location ? 'Edit' : 'New' %> Location</li>
+</ul>
+
+<h1><%= typeof location !== 'undefined' && location ? `Edit ${location.name}` : 'New Location' %></h1>
+
+<div class="panel">
+  <form method="POST"
+        action="<%= typeof location !== 'undefined' && location ? `/locations/${location.id}?_method=PUT` : '/locations' %>">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="type">Type *</label>
+        <select id="type" name="type" required>
+          <option value="">Select type...</option>
+          <% const types = ['facility', 'area', 'location']; %>
+          <% types.forEach(t => { %>
+          <option value="<%= t %>" <%= typeof location !== 'undefined' && location && location.type === t ? 'selected' : '' %>><%= t.charAt(0).toUpperCase() + t.slice(1) %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="parent_id">Parent Location</label>
+        <select id="parent_id" name="parent_id">
+          <option value="">None (top level)</option>
+          <% allLocations.forEach(loc => { %>
+            <% if (typeof location === 'undefined' || !location || loc.id !== location.id) { %>
+            <option value="<%= loc.id %>" <%= typeof location !== 'undefined' && location && location.parent_id === loc.id ? 'selected' : '' %>>
+              <%= loc.name %> (<%= loc.type %>)
+            </option>
+            <% } %>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="name">Name *</label>
+      <input type="text" id="name" name="name" required
+             value="<%= typeof location !== 'undefined' && location ? location.name : '' %>">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea id="description" name="description" rows="3"><%= typeof location !== 'undefined' && location ? (location.description || '') : '' %></textarea>
+    </div>
+
+    <div class="form-actions">
+      <a href="/locations" class="btn btn-ghost">Cancel</a>
+      <button type="submit" class="btn btn-primary"><%= typeof location !== 'undefined' && location ? 'Update' : 'Create' %> Location</button>
+    </div>
+  </form>
+</div>

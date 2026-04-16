@@ -1,0 +1,84 @@
+<div class="page-header">
+  <h1>Items</h1>
+  <div class="page-actions">
+    <a href="/items/new" class="btn btn-primary">+ New Item</a>
+  </div>
+</div>
+
+<div class="filter-row">
+  <form method="get" action="/items" class="search-bar">
+    <input type="search" name="search" placeholder="Search by name, SKU, or description..."
+           value="<%= filters.search %>" aria-label="Search">
+    <select name="supplier_id" aria-label="Filter by supplier">
+      <option value="">All Suppliers</option>
+      <% suppliers.forEach(s => { %>
+      <option value="<%= s.id %>" <%= filters.supplier_id == s.id ? 'selected' : '' %>><%= s.name %></option>
+      <% }) %>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+  </form>
+</div>
+
+<details class="panel">
+  <summary>Import from CSV</summary>
+  <form method="POST" action="/items/import" enctype="multipart/form-data">
+    <div class="form-row">
+      <div class="form-group">
+        <input type="file" name="file" accept=".csv" required>
+      </div>
+      <div class="form-group">
+        <button type="submit" class="btn btn-secondary">Import</button>
+      </div>
+    </div>
+    <p class="text-muted">CSV columns: part_number, name, description, cost_per_unit, reorder_point, reorder_quantity, current_stock</p>
+  </form>
+</details>
+
+<% if (items.length === 0) { %>
+  <div class="empty-state">
+    <p>No items found.</p>
+    <a href="/items/new" class="btn btn-primary">Create one</a>
+  </div>
+<% } else { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Part #</th>
+        <th>Name</th>
+        <th>Supplier</th>
+        <th>Stock</th>
+        <th>Reorder Pt</th>
+        <th>Cards</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach(item => { %>
+      <tr>
+        <td><code><%= item.part_number %></code></td>
+        <td><a href="/items/<%= item.id %>"><%= item.name %></a></td>
+        <td><%= item.supplier_name || '-' %></td>
+        <td>
+          <% if (item.current_stock <= 0) { %>
+            <span class="stock-out"><%= item.current_stock %></span>
+          <% } else if (item.current_stock <= item.reorder_point) { %>
+            <span class="stock-low"><%= item.current_stock %></span>
+          <% } else { %>
+            <span class="stock-ok"><%= item.current_stock %></span>
+          <% } %>
+        </td>
+        <td><%= item.reorder_point %></td>
+        <td><a href="/cards?item_id=<%= item.id %>">View</a></td>
+        <td>
+          <a href="/items/<%= item.id %>/edit" class="btn btn-ghost btn-sm">Edit</a>
+          <form method="POST" action="/items/<%= item.id %>?_method=DELETE" class="inline-form">
+            <button type="submit" class="btn btn-danger btn-sm" data-confirm="Deactivate this item?">Deactivate</button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <%- include('../partials/pagination', { pagination }) %>
+<% } %>

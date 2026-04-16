@@ -1,0 +1,83 @@
+<ul class="breadcrumbs">
+  <li><a href="/cards">Cards</a></li>
+  <li>Card <%= card.card_uid.substring(0, 8) %>...</li>
+</ul>
+
+<div class="page-header">
+  <h1>Card Detail</h1>
+  <div class="page-actions">
+    <a href="/cards/print?ids=<%= card.id %>" class="btn btn-secondary" target="_blank">Print</a>
+    <form method="POST" action="/cards/<%= card.id %>?_method=DELETE" class="inline-form">
+      <button type="submit" class="btn btn-danger btn-sm" data-confirm="Delete this card?">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="panel">
+    <div class="panel-header">QR Code</div>
+    <div style="text-align:center; padding:var(--space-lg);">
+      <img src="<%= card.qr_data_url || `/cards/${card.id}/qr` %>" alt="QR Code" width="220" height="220" style="border-radius:var(--radius-md);">
+      <p class="card-id-fallback" style="margin-top:var(--space-sm);">ID: <%= card.card_uid %></p>
+      <p class="card-id-fallback">Item #<%= card.item_id %></p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Card Details</div>
+    <dl>
+      <dt>Item</dt>
+      <dd><a href="/items/<%= card.item_id %>"><%= card.item_name %></a></dd>
+      <dt>Part Number</dt>
+      <dd><code><%= card.part_number %></code></dd>
+      <dt>Loop Number</dt>
+      <dd><%= card.loop_number %></dd>
+      <dt>Status</dt>
+      <dd><span class="badge badge-<%= card.status %>"><%= (card.status || '').replace(/_/g, ' ') %></span></dd>
+      <% if (card.location_name) { %>
+      <dt>Location</dt>
+      <dd><%= card.location_name %></dd>
+      <% } %>
+      <dt>Created</dt>
+      <dd><%= new Date(card.created_at).toLocaleString() %></dd>
+      <% if (card.last_scanned_at) { %>
+      <dt>Last Scanned</dt>
+      <dd><%= new Date(card.last_scanned_at).toLocaleString() %></dd>
+      <% } %>
+    </dl>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Scan History</h2>
+  </div>
+  <% if (scans && scans.length > 0) { %>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Scanned By</th>
+        <th>Action</th>
+        <th>Previous Status</th>
+        <th>New Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% scans.forEach(scan => { %>
+      <tr>
+        <td><%= new Date(scan.scanned_at).toLocaleString() %></td>
+        <td><%= scan.scanned_by_name || 'Unknown' %></td>
+        <td><%= scan.action %></td>
+        <td><% if (scan.previous_status) { %><span class="badge badge-<%= scan.previous_status %>"><%= scan.previous_status.replace(/_/g, ' ') %></span><% } else { %>-<% } %></td>
+        <td><% if (scan.new_status) { %><span class="badge badge-<%= scan.new_status %>"><%= scan.new_status.replace(/_/g, ' ') %></span><% } else { %>-<% } %></td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } else { %>
+  <div class="empty-state">
+    <p>This card has not been scanned yet.</p>
+  </div>
+  <% } %>
+</div>
